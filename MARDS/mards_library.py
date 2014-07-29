@@ -2,36 +2,6 @@
 #
 # INTERNAL SUPPORT ROUTINES
 #
-
-def interpret_string_rolne(doc, tab_strict=False):
-    '''Take string and convert into a pseudo ROLNE
-    
-    It is not a true ROLNE because dictionaries are used to hold the names.
-    '''
-    item = []
-    current = 0
-    next_pointer = None
-    pointer_list = range(50)
-    pointer_list[0] = item
-    tab_list = range(50)
-    for ctr, line in enumerate(doc.split("\n")):
-        (indent, key, value, error) = parse_line(line, tab_list, tab_strict=tab_strict)
-        if error:
-            print "error in document line {c}: {e}".format(e=error, c=ctr)
-        else:
-            if key:
-                if indent<current:
-                    current = indent
-                elif indent==current:
-                    pass # do nothing, the operational default works
-                elif indent==(current+1):
-                    pointer_list[indent] = next_pointer
-                    current = indent
-                else:
-                    print "tab error in document line {c}".format(c=ctr)
-                next_pointer = []
-                pointer_list[indent].append((key, value, next_pointer))
-    return item
     
 def parse_line(line, tab_list, tab_strict=False):
     indent = None
@@ -83,18 +53,30 @@ def parse_line(line, tab_list, tab_strict=False):
         if space_ctr % 4 != 0:
             return (indent, key, value, "indent found that is not a multiple of 4 spaces")
     else:
-        for spot, x in tab_list:
+        indent = 0
+        #print key, value, space_ctr, repr(tab_list)
+        match_found = False
+        for spot, x in enumerate(tab_list):
             if space_ctr<x:
-                indent = spot
-            elif space_ctr==x:
+                # spot found, but at a new 'tab'. aka the 'slide to the left'
                 indent = spot
                 break
+            elif space_ctr==x:
+                indent = spot
+                match_found = True
+                break
             elif space_ctr>x:
-                del tab_list[spot:] ## CHECK WORK
-                x                
+                indent = spot
         else:
-            tab_list.append(x)
+            # new 'biggest' number found
+            tab_list.append(space_ctr)
             indent += 1
+            match_found = True
+        #print indent, match_found
+        if not match_found:
+            tab_list[indent] = space_ctr
+        if len(tab_list)>(indent+1):
+            del tab_list[indent+1:]
     #
     # done
     #
