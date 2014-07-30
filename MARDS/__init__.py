@@ -31,9 +31,35 @@ def string_to_rolne(doc=None, tab_strict=False):
                     print "tab error in document line {c}".format(c=ctr)
                     print indent, current
                 pointer_list[indent].append(key, value)
-                last_spot = pointer_list[indent][key, value]
+                last_spot = pointer_list[indent][key, value, -1]
     return result
 
+
+def rolne_to_string(r, tab_size=4, quote_all=True):
+    result = ""
+    #print r.data
+    if r:
+        for (rn, rv, rl) in r.data:
+            result += rn
+            if rv is not None:
+                printable = str(rv)
+                quote_flag = False
+                if '"' in printable:
+                    quote_flag = True
+                if len(printable) != len(printable.strip()):
+                    quote_flag = True
+                if quote_flag or quote_all:
+                    result += " "+'"'+rv+'"'
+                else:
+                    result += " "+rv
+            result += "\n"
+            if rl:
+                temp = rolne_to_string(rolne(in_list=rl), tab_size=tab_size, quote_all=quote_all)
+                for line in temp.split("\n"):
+                    if line:
+                        result += " "*tab_size+line
+                        result += "\n"
+    return result
 
 if __name__ == "__main__":
 
@@ -49,6 +75,7 @@ item womp
     size 5
     color blue
 item bam
+item bam
 item broom
     size 7
     title "The "big" thing"
@@ -60,64 +87,9 @@ code_seq
     * r3
 system_title hello'''
 
-        recipe = '''
-recipe "jim3"
-id "53a8775e8c79461fe8d2cc3f"
-parameter design_file
-    __origin_id 53bd9ab2fbec5b433a000000
-    version 0.1 mr
-    name design_file
-    type file
-workstep default_workstep
-    __origin_id 53a8775e8c79461fe8d2cc44
-    version 0.1 mr
-    name default_workstep
-    station workbench
-    command manual
-    maker default_maker
-    typical_cost $0.01
-    file {design_file}
-    output default_part final
-parameter yaba_string
-    __origin_id 53bee395fbec5b4f69000000
-    version 0.1 mr
-    name yaba_string
-    type string
-    default_value "mokey"
-parameter how_long
-    __origin_id 53bef170fbec5b66f9000000
-    version 0.1 mr
-    name how_long
-    type length
-    description "enter da longness"
-    default_unit in
-    default_value 0.75
-parameter flap
-    __origin_id 53bef19afbec5b6f8c000000
-    version 0.1 mr
-    name flap
-    type boolean
-    description "make it so"
-    default_value False
-parameter just_one
-    __origin_id 53bef1eafbec5b03f6000000
-    version 0.1 mr
-    name Just_one
-    type select
-    description "BE PICKY"
-    choices one
-    choices two
-    choices three
-    default_value two
-maker default_maker
-    __origin_id 53a9b186fbec5b13b3000000
-    version 0.1 mr
-    name default_maker
-'''
         #print my_doc
-        r = string_to_rolne(recipe)
-        r["maker", "default_maker"].append("one", "two")
-        print r[("parameter", "flap"):("maker", "default_maker")]
+        r = string_to_rolne(my_doc)
+        print rolne_to_string(r, quote_all=False)
 
     else:
         print "==================================="
