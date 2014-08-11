@@ -1,0 +1,16 @@
+recipe "Bling"
+id "53a490628c79460418ade47e"
+maker default_maker
+    __origin_id 53a490628c79460418ade482
+    version 0.1 mr
+    name default_maker
+workstep default_workstep
+    __origin_id 53a490628c79460418ade483
+    version 0.1 mr
+    name default_workstep
+    station workbench
+    command manual
+    maker default_maker
+    typical_cost $0.01
+    output default_part
+      final

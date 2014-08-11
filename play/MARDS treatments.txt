@@ -1,0 +1,280 @@
+MARDS Treatments
+
+The default for any entry in a MARDS Schema Document is:
+
+    name <name>
+        value
+            type string
+
+-----------------------
+TREATMENT TYPES
+-----------------------
+
+list
+
+    This is the default.
+    Zero or more entries are expected as a list.
+    
+    example:
+    
+        output joe
+        output larry
+        output joe
+        output george
+        
+    would be a list:
+        output: [joe, larry, joe, george]
+    
+unique
+
+    Zero or more entries are expected as a list, but NONE of the entries
+    are repeats of each other.
+    
+    example:
+    
+        output joe
+        output larry
+        output george
+        
+    would be a list:
+        output = [joe, larry, george]
+    or could be a dictionary:
+        output = {'joe': None, 'larry': None, 'george': None}
+        
+concat
+
+    Zero or more entries are expected, but their string equivalents are combined
+    into a single entry during interpretation in a manner that makes sense for their
+    type. For the 'string' and 'label' types, each entry has a '\n' between them.
+
+    example:
+    
+        output joe
+        output larry
+        output george
+
+    would be a string:
+        output = "joe\nlarry\ngeorge"
+        
+sum
+
+    Zero or more entries are expected, but they are "summarized" in a manner that
+    makes sense for their 'type'.
+
+    example (if output is of type 'number'):
+    
+        output 3
+        output 6
+        output 3
+
+    would be a number:
+        output = 12
+        
+        
+average
+
+    Zero or more entries are expected, but they are "averaged" in a manner that
+    makes sense for their 'type'.
+
+    example (if output is of type 'number'):
+    
+        output 3
+        output 6
+        output 3
+
+    would be a number:
+        output = 4
+        
+one
+
+    Exactly one entry is expected. If there is more than one entry, then only the
+    first entry is considered. Additional entries are errors.
+    If there are zero entries, then the 
+    
+    example:
+    
+        id joe
+
+    would be a string:
+        id = "joe"
+
+-----------------
+'required' entries
+-----------------
+
+The schema allows for a 'required' entry. This entry represents whether or not
+a particular element may be missing.
+
+For example, if one where to put a required entry in the context of a 'name', that would
+indicated that the document must have at least ONE 'id' in it.
+
+    SCHEMA FRAGMENT:
+
+        name id
+            required
+
+    GOOD:
+    
+        blah 4
+        id
+        output joe
+
+    BAD:
+    
+        blah 4
+        output joe 
+        
+
+If one where to add the 'required' entry to a 'value' entry, then the value must
+not be missing.
+
+
+    SCHEMA FRAGMENT:
+
+        name id
+            value
+                required
+
+    GOOD:
+    
+        blah 4
+        id zip
+        output joe
+
+    GOOD:
+    
+        blah 4
+        output joe
+
+    BAD:
+    
+        blah 4
+        id
+        output joe
+
+If both 'name' and the 'value' entries have a 'required' entry, then both the name
+and the value must exist:
+
+    SCHEMA FRAGMENT
+        
+        name id
+            required
+            value
+                required
+
+    GOOD:
+    
+        blah 4
+        id zip
+        output joe
+
+    BAD:
+    
+        blah 4
+        id
+        output joe 
+
+    BAD:
+    
+        blah 4
+        output joe 
+
+        
+-------------------------
+Adding 'default' to 'required'
+-------------------------
+
+The 'default' entry changes the behavior of 'required'. It 'creates' a solution
+to a missing entry.
+
+Note: the 'default' entry has no meaning without a 'required' entry.
+
+Example 1 (only name is required):
+
+    SCHEMA FRAGMENT
+        
+        name id
+            required
+            value
+                default hello
+
+    GOOD:
+    
+        blah 4
+        id zip
+        output joe
+        # id is 'zip'
+
+    GOOD:
+    
+        blah 4
+        id
+        output joe 
+        # id has no value
+
+    GOOD:
+    
+        blah 4
+        output joe
+        # id is 'hello'
+        
+
+Example 2 (only value is required):
+
+    SCHEMA FRAGMENT
+        
+        name id
+            value
+                required
+                default hello
+
+    GOOD:
+    
+        blah 4
+        id zip
+        output joe
+        # id is 'zip'
+
+    GOOD:
+    
+        blah 4
+        id
+        output joe 
+        # id is 'hello'
+
+    GOOD:
+    
+        blah 4
+        output joe
+        # there is no id
+        
+Example 3 (both name and value are required):
+
+    SCHEMA FRAGMENT
+        
+        name id
+            required
+            value
+                required
+                default hello
+
+    GOOD:
+    
+        blah 4
+        id zip
+        output joe
+        # id is 'zip'
+
+    GOOD:
+    
+        blah 4
+        id
+        output joe 
+        # id is 'hello'
+
+    GOOD:
+    
+        blah 4
+        output joe
+        # id is 'hello'
+        
