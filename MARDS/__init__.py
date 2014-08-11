@@ -8,16 +8,25 @@ from rolne import rolne
 
 import mards_library as ml
 
-def string_to_rolne(doc=None, tab_strict=False):
+def string_to_rolne(doc=None, schema=None, context="doc", tab_strict=False):
     result = rolne()
+    error_list = []
+    if doc is None:
+        return result, error_list
+    if schema:
+        schema, schema_errors = string_to_rolne(schema, context="schema")
+        error_list.extend(schema_errors)
     current = 0
     tab_list = [0]
     pointer_list = range(50)
     pointer_list[0]=result
+    last_spot = pointer_list[0]
+    line_tracker = {}
     for ctr, line in enumerate(doc.split("\n")):
         (indent, key, value, error) = ml.parse_line(line, tab_list, tab_strict=tab_strict)
         if error:
-            print "error in document line {c}: {e}".format(e=error, c=ctr)
+            t = (context, ctr, error)
+            error_list.append(t)
         else:
             if key:
                 if indent<current:
@@ -30,10 +39,26 @@ def string_to_rolne(doc=None, tab_strict=False):
                 else:
                     print "tab error in document line {c}".format(c=ctr)
                     print indent, current
-                pointer_list[indent].append(key, value)
+                #pointer_list[indent].append(key, value)
+                raise continue here; append_with_tracking not defined yet
+                glob = pointer_list[indent].append_with_tracking(key, value)
                 last_spot = pointer_list[indent][key, value, -1]
-    return result
+                line_tracker[glob] = ctr
+                #if schema and indent==0:
+                #    schema_errors = schema_element_check((key, value), schema)
+                #    for e in schema_errors:
+                #        t = ("schema", ctr, e)
+                #        error_list.append(t)
+    return result, error_list
 
+def schema_element_check((name, value), schema_rolne):
+    error_list = []
+    if name in schema_rolne.get_list("name"):
+        #print "name found"
+        pass
+    else:
+        error_list.append("'{name}' not found in schema definition".format(name=name))
+    return error_list
 
 def rolne_to_string(r, tab_size=4, quote_all=True):
     result = ""
@@ -87,9 +112,34 @@ code_seq
     * r3
 system_title hello'''
 
+        schema = '''
+name item
+    value
+        type label
+        required
+    name size
+        treatment one
+    name color
+        treatment unique
+        name intensity
+    name title
+        treatment concat
+name zoom_flagr
+    treatment one
+    value
+        required
+        default True
+name code_seq
+    name *
+name system_title
+'''
+
         #print my_doc
-        r = string_to_rolne(my_doc)
+        r,e = string_to_rolne(my_doc, schema, tab_strict=True)
+        #r = string_to_python(my_doc, schema)
         print rolne_to_string(r, quote_all=False)
+        print "ERRORS:\n"
+        print repr(e)
 
     else:
         print "==================================="
