@@ -41,21 +41,6 @@ unique
     or could be a dictionary:
         output = {'joe': None, 'larry': None, 'george': None}
         
-concat
-
-    Zero or more entries are expected, but their string equivalents are combined
-    into a single entry during interpretation in a manner that makes sense for their
-    type. For the 'string' and 'label' types, each entry has a '\n' between them.
-
-    example:
-    
-        output joe
-        output larry
-        output george
-
-    would be a string:
-        output = "joe\nlarry\ngeorge"
-        
 sum
 
     Zero or more entries are expected, but they are "summarized" in a manner that
@@ -70,11 +55,24 @@ sum
     would be a number:
         output = 12
         
+    For the 'string' and 'label' types, each entry is concatenated with a '\n' between
+    them.
+
+    example:
+    
+        output joe
+        output larry
+        output george
+
+    would be a string:
+        output = "joe\nlarry\ngeorge"
+       
         
 average
 
     Zero or more entries are expected, but they are "averaged" in a manner that
-    makes sense for their 'type'.
+    makes sense for their 'type'. The 'string' and 'label' types treat an average as the
+    same thing as a 'sum'.
 
     example (if output is of type 'number'):
     
@@ -89,7 +87,7 @@ one
 
     Exactly one entry is expected. If there is more than one entry, then only the
     first entry is considered. Additional entries are errors.
-    If there are zero entries, then the 
+    If there are zero entries, then all is okay unless there are 'required' entries.
     
     example:
     
@@ -119,11 +117,18 @@ indicated that the document must have at least ONE 'id' in it.
         id
         output joe
 
-    BAD:
+    GOOD:
     
         blah 4
         output joe 
         
+        
+The second scenario is also good because the software will simply insert the named
+entry with no value:
+        
+        blah 4
+        id
+        output joe
 
 If one where to add the 'required' entry to a 'value' entry, then the value must
 not be missing.
