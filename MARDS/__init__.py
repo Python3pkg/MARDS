@@ -113,10 +113,11 @@ def sub_schema_treatments(doc, schema, line_keys):
         elif treatment=="average":
             pass
         elif treatment=="one":
-            value_list = doc.get_full_tuples(target)
+            value_list = doc.keys(target)
             if len(value_list)>1:
                 key_list = [value_list[0]]
                 first_line = find_rolne_line(line_keys, key_list)
+                print "jj",key_list
                 del value_list[0]
                 for tup in value_list:
                     key_list = [tup]
@@ -147,8 +148,8 @@ def sub_schema_requirements(doc, schema, line_keys):
         if pointer.get_list("value", None):
             value_parms = pointer["value", None]
             if value_parms.get_list("required", None):
-                for value in doc.get_list(target):
-                    key_list = [(target, value, 0)] #TODO: get the real index
+                for name,value,index in doc.keys(target):
+                    key_list = [(name, value, index)]
                     line_number = find_rolne_line(line_keys, key_list)
                     if value is None:
                         if value_parms.value("default"):
@@ -156,8 +157,8 @@ def sub_schema_requirements(doc, schema, line_keys):
                         else:
                             error_list.append( ("schema", line_number, "value is required for '{}'.".format(target)) )
         # check subs
-        for sub in doc.get_list(target):
-            el = sub_schema_requirements(doc[target,sub],pointer,line_keys)
+        for key in doc.keys(target):
+            el = sub_schema_requirements(doc[key],pointer,line_keys)
             error_list.extend(el)
     return error_list
 
@@ -204,6 +205,7 @@ item zing
     color red
         intensity 44%
     color yellow
+    size 2
 item womp
     size 5
     color blue
@@ -218,7 +220,8 @@ code_seq
     * r3
     * r2
     * r3
-system_title hello'''
+system_title hello
+zoom_flag False'''
 
         schema = '''
 name item
