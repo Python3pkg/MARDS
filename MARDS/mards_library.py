@@ -169,5 +169,113 @@ def value_output(value, quote_method='all', none_handle='strict'):
     else:
         raise "quote method "+str(quote_method)+" not recognized"
     return
-    
+
+def schema_rolne_check(doc, schema):
+    error_list = []
+    #
+    # PASS ONE: FORWARD CHECK OF DOC
+    #
+    # this pass verifies that each entry in the document
+    # has a corresponding entry in the schema
+    #
+    el = sub_schema_coverage(doc, schema)
+    error_list.extend(el)
+    #
+    # PASS TWO: REQUIREMENTS CHECK OF SCHEMA
+    #
+    # this pass verifies that any 'required' entries in the
+    # schema are met. If auto-inserts if allowed. Otherwise,
+    # it adds an error.
+    el = sub_schema_requirements(doc, schema)
+    error_list.extend(el)
+    #
+    # PASS THREE: TREATMENT CHECKS
+    #
+    el = sub_schema_treatments(doc, schema)
+    error_list.extend(el)
+    return doc, error_list
+
+def sub_schema_coverage(doc, schema):
+    error_list = []
+    for entry in doc.dump():
+        (name, value, index, seq) = entry
+        if not name in schema.get_list("name"):
+            error_list.append( ("doc", seq, "a name of '{}' not found in schema context".format(name)) )
+        else:
+            # check subs
+            el = sub_schema_coverage(doc[name, value, index], schema["name", name])
+            error_list.extend(el)
+    return error_list
+
+def sub_schema_treatments(doc, schema):
+    error_list = []
+    for target in schema.get_list("name"):
+        pointer = schema["name", target]
+        treatment = pointer.value("treatment")
+        if not treatment:
+            treatment = "list"
+        if treatment=="list":
+            pass # there are no checks needed for list
+        elif treatment=="unique":
+            first_line = {}
+            for entry in doc.dump(target):
+                (en, ev, ei, es) = entry
+                if ei==0:
+                    first_line[ev] = es
+                else:
+                    error_list.append( ("doc", es, "'{}' entries should be unique, but this line is a duplicate of line {}.".format(target, first_line[ev])) )
+        elif treatment=="sum":
+            pass
+        elif treatment=="average":
+            pass
+        elif treatment=="one":
+            entry_list = doc.dump(target)
+            if len(entry_list)>1:
+                first_line = entry_list[0][3]
+                del entry_list[0]
+                for (en, ev, ei, es) in entry_list:
+                    error_list.append( ("doc", es, "only one '{}' entry should exist, but this line is in addition to line {}.".format(target, first_line)) )
+        else:
+            pass
+        # check subs
+        for key in doc.keys(target):
+            el = sub_schema_treatments(doc[key],schema["name", target])
+            error_list.extend(el)
+    return error_list
+
+req_ctr = 0
+
+def sub_schema_requirements(doc, schema):
+    global req_ctr
+    error_list = []
+    for target in schema.get_list("name"):
+        pointer = schema["name", target]
+        # check for missing target
+        if pointer.get_list("required", None):
+            if doc.get_list(target):
+                pass
+            else:
+                if pointer.get_list("value", None):
+                    doc.append(target, pointer["value", None].value("default"), seq='auto'+str(req_ctr))
+                else:
+                    doc.append(target, None, seq="auto"+str(req_ctr))
+                req_ctr += 1
+        # check 'value' (if exists)
+        if pointer.get_list("value", None):
+            value_parms = pointer["value", None]
+            if value_parms.get_list("required", None):
+                for name,value,index,seq in doc.dump(target):
+                    #key_list = [(name, value, index)]
+                    #line_number = find_rolne_line(line_keys, key_list)
+                    if value is None:
+                        if value_parms.value("default"):
+                            doc[target, value, 0]=value_parms.value("default")
+                        else:
+                            error_list.append( ("schema", seq, "value is required for '{}'.".format(target)) )
+        # check subs
+        for key in doc.keys(target):
+            el = sub_schema_requirements(doc[key], pointer)
+            error_list.extend(el)
+    return error_list
+
 # eof: MARDS\mards_library.py
