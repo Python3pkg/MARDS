@@ -8,6 +8,97 @@ from rolne import rolne
 
 import mards_library as ml
 
+schema_schema = '''
+ordered false
+name ordered
+    treatment one
+    required
+    value
+        type boolean
+        required
+        default True
+name name
+    treatment unique
+    value
+        type label
+        required
+    name ordered
+        treatment one
+        required
+        value
+            type boolean
+            required
+            default True
+    name required
+        treatment one
+        required
+        value
+            type boolean
+            required
+            default False
+    name treatment
+        value
+        type label
+    name value
+        name type
+        name required
+        name default
+    name name
+        treatment unique
+        value
+            type label
+            required
+        name ordered
+            treatment one
+            required
+            value
+                type boolean
+                required
+                default True
+        name required
+            treatment one
+            required
+            value
+                type boolean
+                required
+                default False
+        name treatment
+            value
+            type label
+        name value
+            name type
+            name required
+            name default
+        name name
+            treatment unique
+            value
+                type label
+                required
+            name ordered
+                treatment one
+                required
+                value
+                    type boolean
+                    required
+                    default True
+            name required
+                treatment one
+                required
+                value
+                    type boolean
+                    required
+                    default False
+            name treatment
+                value
+                type label
+            name value
+                name type
+                name required
+                name default
+'''
+
+
+
 def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False):
     result = rolne()
     error_list = []
@@ -71,18 +162,40 @@ def sub_generate_tuple_list_simple(doc):
     return result
 
 def sub_convert_python(doc, schema):
-    if schema.get_list("context", None):
-        if schema["context", None].value("ordered")=="false":
-            result = {}
-            #continue here
-        else:
-            result = []
-            for entry in doc.dump():
-                (en, ev, ei, es) = entry
-                tup = (en, ev, sub_generate_tuple_list_simple(doc[en, ev, ei]))
-                result.append(tup)
+    ordered_flag = True
+    if schema.value("ordered")=="false":
+        ordered_flag=False
+    # create the 'structure' whatever it is
+    if ordered_flag:
+        result = []
     else:
-        result = "internal error: did not parse schema file correctly"
+        result = {}
+    # parse each entry
+    for entry in doc.dump():
+        (en, ev, ei, es) = entry
+        treatment = schema["name", en].value("treatment")
+        # create an item for the structure
+        if schema["name", en].get_list("name"):
+            sub_list = sub_convert_python(doc[en, ev, ei], schema["name", en])
+            if sub_list:
+                if ev:
+                    item = (ev, sub_list)
+                else:
+                    item = sub_list
+            else:
+                item = ev
+        else:
+            item = ev
+        # now add the item to the structure
+        if ordered_flag:
+            result.append(item)
+        else:
+            if treatment=='one':
+                result[en] = item
+            else: #anything else is a list
+                if not en in result:
+                    result[en] = []
+                result[en].append(item)
     return result
 
 
@@ -141,8 +254,7 @@ system_title hello
 zoom_flag False'''
 
         schema = '''
-context
-    ordered false
+ordered false
 name item
     treatment unique
     value
@@ -169,18 +281,22 @@ name boing
         required
         default joejoe
 name code_seq
+    treatment one
     name *
 name system_title
 '''
 
         #print my_doc
         print schema
+        #x,e = MARDS_to_rolne(schema, schema_schema)
         #r,e = MARDS_to_rolne(my_doc, schema, tab_strict=True)
         x,e = MARDS_to_python(my_doc, schema)
         for ctr, line in enumerate(my_doc.split("\n")):
             print ctr, line
+        #for ctr, line in enumerate(schema.split("\n")):
+        #    print ctr, line
         print "FINAL:\n"
-        print repr(x)
+        print str(x)
         print "ERRORS:\n"
         print repr(e)
 

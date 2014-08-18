@@ -1,4 +1,4 @@
-MARDS Treatments
+MARDS elements
 
 The default for any entry in a MARDS Schema Document is:
 
@@ -9,6 +9,8 @@ The default for any entry in a MARDS Schema Document is:
 -----------------------
 TREATMENT TYPES
 -----------------------
+
+A 'value' can have a 'treatment' which changes the interpretive behavior on the MARDS document.
 
 list
 
@@ -23,7 +25,7 @@ list
         output george
         
     would be a list:
-        output: [joe, larry, joe, george]
+        output -> [joe, larry, joe, george]
     
 unique
 
@@ -37,9 +39,9 @@ unique
         output george
         
     would be a list:
-        output = [joe, larry, george]
+        output -> [joe, larry, george]
     or could be a dictionary:
-        output = {'joe': None, 'larry': None, 'george': None}
+        output -> {'joe': None, 'larry': None, 'george': None}
         
 sum
 
@@ -53,7 +55,7 @@ sum
         output 3
 
     would be a number:
-        output = 12
+        output -> 12
         
     For the 'string' and 'label' types, each entry is concatenated with a '\n' between
     them.
@@ -65,7 +67,7 @@ sum
         output george
 
     would be a string:
-        output = "joe\nlarry\ngeorge"
+        output -> "joe\nlarry\ngeorge"
        
         
 average
@@ -81,7 +83,7 @@ average
         output 3
 
     would be a number:
-        output = 4
+        output -> 4
         
 one
 
@@ -94,7 +96,7 @@ one
         id joe
 
     would be a string:
-        id = "joe"
+        id -> "joe"
 
 -----------------
 'required' entries
@@ -283,3 +285,431 @@ Example 3 (both name and value are required):
         output joe
         # id is 'hello'
         
+----------------- 
+the 'ordered' flag
+-----------------
+
+The 'ordered' flag determines the overall need to retain the contextual order. The DEFAULT is yes. So if
+the schema does not have the 'ordered' element, then the context must retain order.
+
+    SCHEMA FRAGMENT
+        
+        name blah
+        name output
+        
+    DOCUMENT FRAGMENT
+    
+        blah 1
+        blah 2
+        output joe
+        output jerry
+
+    DIFFERENT:
+    
+        output joe
+        output jerry
+        blah 1
+        blah 2
+
+    JSON INTERPRETATION:
+    
+        [(blah, 1), (blah, 2), (output, joe), (output, jerry)]
+
+    This is different because the 'name' context is ordered. Even though the
+    'output' and 'blah' lists happen to be in order, the grouping of 'output'
+    and 'blah' are not in order any more.
+    
+An example of order being turned off in the 'name' context:
+
+    SCHEMA FRAGMENT
+        
+        ordered False
+        name blah
+        name output
+        
+    DOCUMENT FRAGMENT
+    
+        blah 1
+        blah 2
+        output joe
+        output jerry
+
+    SAME:
+    
+        output joe
+        output jerry
+        blah 1
+        blah 2
+
+    SAME:
+    
+        output joe
+        blah 1
+        output jerry
+        blah 2
+        
+    JSON INTERPRETATION:
+    
+        {blah: [1, 2], output: [joe, jerry]}
+
+    Since the name context is no longer important, the relative order of the 'blah' and
+    'output' lists are not important. It is only important that the order is retained
+    inside the lists.
+    
+An example of order being turned off in the 'value' context:
+
+    SCHEMA FRAGMENT
+        
+        name blah
+            value
+                ordered False
+        name output
+        
+    DOCUMENT FRAGMENT
+    
+        blah 1
+        blah 2
+        output joe
+        output jerry
+
+    SAME:
+    
+        blah 2
+        blah 1
+        output joe
+        output jerry
+
+    DIFFERENT:
+    
+        output joe
+        output jerry
+        blah 1
+        blah 2
+
+    JSON INTERPRETATION:
+    
+        [(blah, 1), (blah, 2), (output, joe), (output, jerry)]
+
+    The 'values' for 'blah' are not ordered, so having [2,1] is the same as [1,2]. However, the
+    relative placement of 'output' and 'blah' entries must retain their order.
+
+An example of order being turned both the 'value' and 'name' contexts:
+
+    SCHEMA FRAGMENT
+        
+        ordered False
+        name blah
+            value
+                ordered False
+        name output
+            value
+                ordered False
+        
+    DOCUMENT FRAGMENT
+    
+        blah 1
+        blah 2
+        output joe
+        output jerry
+
+    SAME:
+    
+        output jerry
+        output joe
+        blah 2
+        blah 1
+
+    JSON INTERPRETATION:
+    
+        {blah: {1: None, 2:None}, output: {joe: None, jerry: None}}
+
+    None of the entries have a retained order. As long as the same four named
+    elements are in the document, the order is not important.
+    
+    
+--------------------------------------
+JSON and Pythonic INTEPRETATION
+--------------------------------------
+
+The following elements can influence interpretation:
+
+* 'treatment' statements
+* 'ordered' statements in name and value contexts
+* existence of subtending 'name' entries in the schema
+
+THE DEFAULT:
+
+As a worst-case fallback, a MARDS document is represented as a list-of-tuples containing lists-of-tuples. It is the form of:
+
+  [(name, value, _list_), ...]
+  
+Where list _can_ be another list of (name, value, list) to subtend the name/value.
+  
+For example:
+
+    SCHEMA:
+    
+        name blah
+            name size
+        name output
+        name corn
+    
+    DOCUMENT:
+
+        blah 1
+            size x
+            size xl
+        blah 2
+            size sm
+            size x
+        output joe
+        output jerry
+        corn 1994
+
+Would become, in python:
+
+    doc = [
+        ('blah', '1', [
+            ('size', 'x'),
+            ('size', 'xl')
+        ]),
+        ('blah', '1', [
+            ('size', 'x'),
+            ('size', 'xl')
+        ]),
+        ('output', 'joe'),
+        ('output, 'jerry'),
+        ('corn', '1994')
+    ]
+    
+    # code to get the sizes of 'blah 1'
+    size_items = [x[2] for x in doc if x[0]=='blah' and x[1]=='1']
+    sizes = [x[1] for x in size_items[0]]
+    
+    # code to get the 'corn' value
+    corn_year = [x[1] for x in doc if x[0]=='corn'][0]
+
+ORDERED
+
+Adding an 'ordered' statement of 'False' to the 'name' context converts a
+name to a dicitonary key and any subtending values to a list (or list of
+tuples). For example:
+
+    SCHEMA:
+
+        ordered False
+        name blah
+            name size
+        name output
+        name corn
+    
+    DOCUMENT:
+
+        blah 1
+            size x
+            size xl
+        blah 2
+            size sm
+            size x
+        output joe
+        output jerry
+        corn 1994
+
+Would become, in python:
+
+    doc = {
+        'blah': [
+            ('1', [
+                ('size', 'x'),
+                ('size', 'xl')
+            ]),
+            ('2', [
+                ('size', 'sm'),
+                ('size', 'x')
+            ]),
+        'output': ['joe', 'jerry'],
+        'corn': ['1994']
+    }
+
+    # code to get the sizes of 'blah 1'
+    size_list = [x[1] for x in doc['blah'] if x[0]=='1']
+    sizes = [x[1] for x in size_list]
+    
+    # code to get the 'corn' value
+    corn_year = doc['corn'][0]
+
+Going even further:
+
+    SCHEMA:
+
+        ordered False
+        name blah
+            ordered False
+            name size
+        name output
+        name corn
+    
+    DOCUMENT:
+
+        blah 1
+            size x
+            size xl
+        blah 2
+            size sm
+            size x
+        output joe
+        output jerry
+        corn 1994
+
+Would become, in python:
+
+    doc = {
+        'blah': [
+            ('1', {'size': ['x', 'xl']}),
+            ('2', {'size': ['sm', 'x']})
+        ],
+        'output': ['joe', 'jerry'],
+        'corn': ['1994']
+    }
+
+    # code to get the sizes of 'blah 1'
+    sizes = [x[1]['size'] for x in doc['blah'] if x[0]=='1']
+    
+    # code to get the 'corn' value
+    corn_year = doc['corn'][0]
+
+    
+If the 'ordered False' is used in a value context, then the those values are
+used as dictionary keys IF there are any subtending name elements in the schema.
+Otherwise it is still a list.
+
+To keep things consistent, it is existence of 'name' elements in the schema that
+determine the behavior, whether they are actually in the document is not important.
+
+Example:
+    
+    SCHEMA:
+
+        ordered False
+        name blah
+            ordered False
+            value
+                ordered False
+            name size
+        name output
+        name corn
+    
+    DOCUMENT:
+
+        blah 1
+            size x
+            size xl
+        blah 2
+            size sm
+            size x
+        output joe
+        output jerry
+        corn 1994
+
+Would become, in python:
+
+    doc = {
+        'blah': {
+            '1': {'size': ['x', 'xl']},
+            '2': {'size': ['sm', 'x']}
+        },
+        'output': ['joe', 'jerry'],
+        'corn': ['1994']
+    }
+
+    # code to get the sizes of 'blah 1'
+    sizes = doc['blah']['1']['size']
+    
+    # code to get the 'corn' value
+    corn_year = doc['corn'][0]
+
+    
+TREATMENT ONE, SUM, and AVERAGE
+
+Adding a treament of 'one', 'sum', or 'average' to a name context, will
+change the intpretation of the document. Specifically, it removes the
+'list-like' behavior of the value IF it is already in the context of a
+dictionary.
+
+For example:
+
+    SCHEMA:
+
+        ordered False
+        name blah
+            ordered False
+            value
+                ordered False
+            name size
+        name output
+        name corn
+            treatment one
+    
+    DOCUMENT:
+
+        blah 1
+            size x
+            size xl
+        blah 2
+            size sm
+            size x
+        output joe
+        output jerry
+        corn 1994
+
+Would become, in python:
+
+    doc = {
+        'blah': {
+            '1': {'size': ['x', 'xl']},
+            '2': {'size': ['sm', 'x']}
+        },
+        'output': ['joe', 'jerry'],
+        'corn': '1994'
+    }
+
+    # code to get the sizes of 'blah 1'
+    sizes = doc['blah']['1']['size']
+    
+    # code to get the 'corn' value
+    corn_year = doc['corn']
+
+NOTE regarding ROLNE
+
+The rolne data type, if used rather than python's built-in types, also makes
+queries easy. The 'ordered' and 'treatment' clues are simply not needed. Using
+the same example:
+
+    SCHEMA:
+
+        name blah
+            name size
+        name output
+        name corn
+    
+    DOCUMENT:
+
+        blah 1
+            size x
+            size xl
+        blah 2
+            size sm
+            size x
+        output joe
+        output jerry
+        corn 1994
+
+    ROLNE CODE in Python:
+        
+    doc = MARDS.MARDS_to_rolne(text_document)    
+    
+    # code to get the sizes of 'blah 1'
+    sizes = doc['blah', '1'].get_list("size")
+    
+    # code to get the (first) 'corn' value
+    corn_year = doc.value('corn')
