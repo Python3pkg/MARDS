@@ -422,7 +422,11 @@ An example of order being turned both the 'value' and 'name' contexts:
     JSON INTERPRETATION:
     
         {blah: {1: None, 2:None}, output: {joe: None, jerry: None}}
+        
+    or
 
+        {blah: [1, 2], output: [joe, jerry]}
+    
     None of the entries have a retained order. As long as the same four named
     elements are in the document, the order is not important.
     
