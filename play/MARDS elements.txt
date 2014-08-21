@@ -719,14 +719,38 @@ the same example:
     corn_year = doc.value('corn')
 
 -------------------------
-RECURSION
+INSERT and RECURSION
 -------------------------
+MARDS let you "insert" a copy of another element with the 'insert' element.
+The insert simply references a 'name' element with the same label. So, instead
+of writing:
 
-The MARDS schema supports recursion, but in a more direct manner than other
-markup and serialization formats. Recursive references use a 'recurse' rather
-than 'name' element.
+    name box
+        name params
+            name color
+            name size
+            name title
+    name circle
+        name params
+            name color
+            name size
+            name title
 
-Example:
+one could simply write:
+
+    name box
+        name params
+            name color
+            name size
+            name title
+    name circle
+        insert params
+
+Of course, in order for the 'insert' to work, the referenced label must only
+exist ONCE in the entire document.
+
+The MARDS schema also supports recursion, but with 'recurse' rather than
+'insert'. Othwerwise it behaves in a similar manner. For example:
 
     SCHEMA
     
@@ -758,15 +782,16 @@ Example:
             description "blah blah blah"
             
 
-RULE ONE: In order for the 'recurse' reference to work, the name label is refers to must
-be unique. It cannot be used any where else in the document. In the previous example,
-'name section' connot appear in any other place. There can, however, be multiple
-'recurse section' references.
+Again, the label must unique in the document.
 
-RULE TWO: The 'recurse' reference cannot have any additional name or value elements
-subtending it.
+SIDEBAR: If 'recurse' and 'insert' really do the same thing, why are
+there two different elements? It was done purposefully to prevent
+accidents on the part of the person designing the schema. In fact, if
+a 'recurse' fails to be recursive, it generates an error. Likewise,
+if 'insert' becomes recursive, that also generates an error.
 
-Only the schema document can be recursive. A data document cannot be. 
+Only a schema document can be recursive. A data document cannot (or
+should not) be. 
 
 ----------------------------
 TYPES
@@ -777,6 +802,13 @@ A new type is defined with a 'define_type' element.
 Typically, a 'define_type' is first defined at the root of the document. If a type is defined at any
 other level of indentation, then that type is limited to that context. While this is
 possible, it is a highly discouranged practice.
+
+As of version 1.0, a define_type is simply:
+
+    define_type <label>
+    
+It is presumed an external program has been written to enfore its syntax.
+What follows is a possible example of expanded syntax for version 1.1:
 
 Example:
 
@@ -816,31 +848,69 @@ Example:
 IMPORTS
 -------------------------------------
 
-%%MARDS_en_1.0 local:thename
+On can declare the schema for a document on the top declaritive line:
+
+    %%MARDS_en_1.0 thename
 
 There can ONLY be one schema for a data document
 
+Alternatively, one can embed a schema directly into the data
+documnt with the '%%schema' element.
+
+    %%MARDS_en_1.0
+    %%schema
+        name document_title
+        name summary
+        name section
+            value
+                required
+            name description
 
 %%MARDS_schema_en_1.0
-import 3rdpart
-    from library
-import boolean
-    from library
-    named my_boolean
-import my_type
-    from http://www.outthere.com/my_type.mards
-import integer
-    from common
-import length
-    from common
+import_type 3rdpart
+    repository schema.xyz.com
+import_type boolean
+    local "%lib/big_boolean.schema"
+        use my_boolean
+import_type my_type
+    direct http://www.outthere.com/my_type.mards
+import_type integer
+    repository common.mards.org
+import_type length
+    repository common.mards.org
 
-'from' is either 'common', 'library', 'local', or a URI.
+One of the following three elements can subtend an 'import' or '%%MARDS_en_1.0' element:
 
-The _exact_ meaning of these depends somewhat on the implementation:
-   'common' are the default types set by version 1.0 of the spec
-   'library' are types managed by whoever designed the MARDS library
-   'local' means a schema document in the same location as this document
-   a URL is a standardized uri used to retreive the MARDS schema doc.
-   
-    
-Ter
+    'local' means a schema document in the same location as this document.
+        The string that follows is the name of the document. There is no
+        exact standard for this string as it is presumed that any 'local'
+        use is not meant to be universal.
+        
+        This is the presumed default. So,
+        
+            %%MARDS_en_1.0 thename.schema
+            
+        is the same as:
+        
+            %%MARDS_en_1.0 thename.schema
+                local "thename.schema"
+
+    'repository' are schemas managed by a common web site or system and
+        are cached locally.
+       
+        The following is tried by default:
+       
+            import abc
+                repository xyz.domain.com
+        
+        pulls from:
+        
+            https://repository.xyz.domain.com/schema?name=abc.schema
+        
+        The 'https://repository.' prefix and the '/schema?name=' and '{}.schema'
+        suffixes are the
+        defaults. These can be changed with 'prefix', 'middle', and 'suffix' sub
+        elements.
+        
+    'direct' is a standardized uri used to retreive the MARDS schema doc.
+
