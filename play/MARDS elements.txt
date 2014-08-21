@@ -717,3 +717,26 @@ the same example:
     
     # code to get the (first) 'corn' value
     corn_year = doc.value('corn')
+
+-------------------------
+RECURSION
+-------------------------
+
+The MARDS schema supports recursion, but in a more direct manner than other
+markup and serialization formats. Recursive references use a 'recurse' rather
+than 'name' element.
+
+Example:
+
+    SCHEMA
+    
+        name document_title
+        name summary
+        name section
+            value
+                required
+            name description
+            recurse section
+        
+NOTE: In order for the 'recurse' reference to work, the label is refers to must
+be uniquely name. It can only exist in one section of the document.
