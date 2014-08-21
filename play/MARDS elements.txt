@@ -737,6 +737,110 @@ Example:
                 required
             name description
             recurse section
-        
-NOTE: In order for the 'recurse' reference to work, the label is refers to must
-be uniquely name. It can only exist in one section of the document.
+
+    EXAMPLE DOC
+    
+        document_title "The MARDS Manual"
+        summary "A simply splendid manual explaining MARDS"
+        section "Chapter 1"
+            description "Introduction"
+            section "1.1"
+                description "About Me"
+            section "1.2"
+                description "Standards Used"
+            section "2.3"
+                description "Why Mards?"
+                section "2.3.1"
+                    descrption "No, seriously, why Mards?"
+        section "Chapter 2"
+            description "More Stuff"
+        section "Chapter 3"
+            description "blah blah blah"
+            
+
+RULE ONE: In order for the 'recurse' reference to work, the name label is refers to must
+be unique. It cannot be used any where else in the document. In the previous example,
+'name section' connot appear in any other place. There can, however, be multiple
+'recurse section' references.
+
+RULE TWO: The 'recurse' reference cannot have any additional name or value elements
+subtending it.
+
+Only the schema document can be recursive. A data document cannot be. 
+
+----------------------------
+TYPES
+----------------------------
+
+A new type is defined with a 'define_type' element.
+
+Typically, a 'define_type' is first defined at the root of the document. If a type is defined at any
+other level of indentation, then that type is limited to that context. While this is
+possible, it is a highly discouranged practice.
+
+Example:
+
+    SCHEMA:
+    
+        define_type length
+            regex "\s*([0-9][0-9]*.?[0-9]*)\s*(\w*)\s*"
+                group length
+                group unit
+                    find mm
+                        calc length
+                            formula n*1000
+                    find cm
+                        calc length
+                            formula n*100
+            extern_support True
+            return length
+            
+        define_type boolean
+            regex "\s*(.*)\s*"
+                group bool
+                    find true
+                    find True
+                        replace_with true
+                    find 1
+                        replace_with true
+                    find false
+                    find False
+                        replace_with false
+                    find 0
+                        replace_with false
+                    find_else_reject true
+            extern_support False
+            return bool
+
+-------------------------------------
+IMPORTS
+-------------------------------------
+
+%%MARDS_en_1.0 local:thename
+
+There can ONLY be one schema for a data document
+
+
+%%MARDS_schema_en_1.0
+import 3rdpart
+    from library
+import boolean
+    from library
+    named my_boolean
+import my_type
+    from http://www.outthere.com/my_type.mards
+import integer
+    from common
+import length
+    from common
+
+'from' is either 'common', 'library', 'local', or a URI.
+
+The _exact_ meaning of these depends somewhat on the implementation:
+   'common' are the default types set by version 1.0 of the spec
+   'library' are types managed by whoever designed the MARDS library
+   'local' means a schema document in the same location as this document
+   a URL is a standardized uri used to retreive the MARDS schema doc.
+   
+    
+Ter
