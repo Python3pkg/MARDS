@@ -197,7 +197,7 @@ def schema_rolne_check(doc, schema):
 
 def sub_schema_coverage(doc, schema):
     error_list = []
-    for entry in doc.dump():
+    for entry in doc.dump_list( (), name=True, value=True, index=True, seq=True):
         (name, value, index, seq) = entry
         if not name in schema.get_list("name"):
             error_list.append( ("doc", seq, "a name of '{}' not found in schema context".format(name)) )
@@ -218,23 +218,29 @@ def sub_schema_treatments(doc, schema):
             pass # there are no checks needed for list
         elif treatment=="unique":
             first_line = {}
-            for entry in doc.dump(target):
+            delete_list=[]
+            for entry in doc.dump_list((target), name=True, value=True, index=True, seq=True):
                 (en, ev, ei, es) = entry
                 if ei==0:
                     first_line[ev] = es
                 else:
+                    delete_list.append((en, ev, ei))
                     error_list.append( ("doc", es, "'{}' entries should be unique, but this line is a duplicate of line {}.".format(target, first_line[ev])) )
+            for tup in reversed(delete_list):  # the items must be deleted in reverse to avoid index numbering problems
+                del doc[tup]
         elif treatment=="sum":
             pass
         elif treatment=="average":
             pass
         elif treatment=="one":
-            entry_list = doc.dump(target)
+            entry_list = doc.dump_list((target), name=True, value=True, index=True, seq=True)
             if len(entry_list)>1:
                 first_line = entry_list[0][3]
                 del entry_list[0]
                 for (en, ev, ei, es) in entry_list:
                     error_list.append( ("doc", es, "only one '{}' entry should exist, but this line is in addition to line {}.".format(target, first_line)) )
+                for (en, ev, ei, es) in reversed(entry_list):
+                    del doc[en, ev, ei]
         else:
             pass
         # check subs
@@ -264,7 +270,7 @@ def sub_schema_requirements(doc, schema):
         if pointer.get_list("value", None):
             value_parms = pointer["value", None]
             if value_parms.get_list("required", None):
-                for name,value,index,seq in doc.dump(target):
+                for name,value,index,seq in doc.dump_list((target), name=True, value=True, index=True, seq=True):
                     #key_list = [(name, value, index)]
                     #line_number = find_rolne_line(line_keys, key_list)
                     if value is None:
@@ -277,5 +283,126 @@ def sub_schema_requirements(doc, schema):
             el = sub_schema_requirements(doc[key], pointer)
             error_list.extend(el)
     return error_list
+
+def sub_convert_python(doc, schema):
+    #print "jj", doc, schema
+    if schema.value("ordered")=="False":
+        name_ordered_flag = False
+    else:
+        name_ordered_flag = True
+    # create the 'structure' whatever it is
+    if name_ordered_flag:
+        result = []
+    else:
+        result = {}
+    delete_list = {}
+    # parse each entry
+    for entry in doc.dump_list( (), name=True, value=True, index=True, seq=True):
+        (en, ev, ei, es) = entry
+        treatment = schema["name", en].value("treatment")
+        if schema["name", en].value("ordered")=="False":
+            value_ordered_flag = False
+        else:
+            value_ordered_flag = True
+        if schema["name", en].get_list("name"):
+            has_subs = True
+        else:
+            has_subs = False
+        name_count = len(doc.get_list(en))
+        sub_list = sub_convert_python(doc[en, ev, ei], schema["name", en])
+        # create an item for the structure
+        if name_ordered_flag:
+            if value_ordered_flag:
+                if has_subs:
+                    item = (en, ev, sub_list)
+                else:
+                    item = (en, ev)
+            else:
+                if has_subs:
+                    item = (en, ev, sub_list)
+                else:
+                    item = (en, ev)
+            result.append(item)
+        else:
+            if value_ordered_flag:
+                if has_subs:
+                    if ev:
+                        item = (ev, sub_list)
+                    else:
+                        item = sub_list
+                else:
+                    item = ev
+            else:
+                if has_subs:
+                    item = {ev: sub_list}
+                else:
+                    item = ev
+            if treatment=='one':
+                if not en in result:
+                    result[en] = item # only set if the first found
+            elif treatment=='sum':
+                if value_ordered_flag:
+                    if not en in result:
+                        result[en] = (ev, sub_list)
+                    else:
+                        result[en] = (type_aware_sum_value(result[en][0], ev), type_aware_sum_sub(result[en][1], sub_list))
+                else:
+                    #print "jj", en
+                    if not en in result:
+                        result[en] = {ev: sub_list}
+                        if not en in delete_list:
+                            delete_list[en] = [ev]
+                    else:
+                        dv = delete_list[en][-1]
+                        delete_list[en].append(ev)
+                        new_key = type_aware_sum_value(dv, ev)
+                        #print "new_key", new_key
+                        result[en][new_key] = type_aware_sum_sub(result[en][dv], sub_list)
+            else: #anything else is a list
+                if not en in result:
+                    result[en] = []
+                result[en].append(item)
+        # cleanup of deleted keys from sub operation
+        for name in delete_list:
+            print "del", name, delete_list[name]
+            # TODO: leave this in here or handle summing in rolne?
+    return result
+
+
+def type_aware_sum_sub(item_a, item_b, item_type=None):
+    if type(item_a) is list:
+        result = item_a
+        if type(item_b) is list:
+            result.extend(item_b)
+        else:
+            result.append(item_b)
+    elif type(item_a) is dict:
+        result = {}
+        for key in item_a:
+            if key in item_b:
+                if type(item_a[key]) is list:
+                    value = item_a[key] + item_b[key]
+                else:
+                    value = str(item_a[key])+str(item_b[key])
+                result[key] = value
+            else:
+                result[key] = item_a[key] 
+        #dict(item_a.items() + item_b.items())
+    else:
+        result = "fail"
+    return result
+
+def type_aware_sum_value(item_a, item_b, item_type=None):
+    if item_a is None:
+        if item_b is None:
+            result = None
+        else:
+            result = item_b
+    else:
+        if item_b is None:
+            result = item_a
+        else:
+            result = str(item_a)+str(item_b)
+    return result
 
 # eof: MARDS\mards_library.py
