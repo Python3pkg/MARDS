@@ -722,8 +722,8 @@ the same example:
 INSERT and RECURSION
 -------------------------
 MARDS let you "insert" a copy of another element with the 'insert' element.
-The insert simply references a 'name' element with the same label. So, instead
-of writing:
+The insert simply references another 'name' element with the same label. So,
+instead of writing:
 
     name box
         name params
@@ -784,11 +784,45 @@ The MARDS schema also supports recursion, but with 'recurse' rather than
 
 Again, the label must unique in the document.
 
+'recurse' also supports a sub-element called 'limit'. This essentially sets the
+qty of recursive loops to go through. So,
+
+    recurse my_name
+        limit 5
+        
+Will only recurse 5 times before stopping. The 'default' for recurse is 12. It
+should be noted that:
+
+    recurse my_name
+        limit 1
+
+is almost the same thing as:
+
+    insert my_name
+    
+The final difference simply being that recurse must be self-referential and
+insert must not be.
+
 SIDEBAR: If 'recurse' and 'insert' really do the same thing, why are
 there two different elements? It was done purposefully to prevent
-accidents on the part of the person designing the schema. In fact, if
-a 'recurse' fails to be recursive, it generates an error. Likewise,
-if 'insert' becomes recursive, that also generates an error.
+accidents on the part of the person designing the schema. The designers of
+this schema have yet to come with a scenario where one needs an element to
+be either. Generally, either:
+
+A. The designer specifically means for it to be recursive. In which case flagging
+it as non-recursive is useful for debugging. Or,
+
+B. The designer did not intend for recursion and such recursion has came about from
+a "hidden" loop of multiple inserts. A "a->b->c->a" type of loop. In that case,
+flagging it as an error is very useful for debugging.
+
+If a reason is found for a super-flexible "either", then it might be added
+to the spec in a later release. It will very likely have a different element
+name.
+
+SIDEBAR: Why can't I have an unlimited 'recurse'? Philisophically, MARDS
+documents _always_ resolve to static deterministic data sets. Allowing
+infinite recursion prevents such a resolution.
 
 Only a schema document can be recursive. A data document cannot (or
 should not) be. 

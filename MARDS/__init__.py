@@ -91,6 +91,32 @@ def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False):
         error_list.extend(schema_errors)
     return result, error_list
 
+
+def _SCHEMA_to_rolne(doc=None):
+    schema, error_list = MARDS_to_rolne(doc)
+    # build a list of names from the document and their corresponding locations
+    # mark as False if the key is seen twice
+    name_keys = {}
+    name_recurs = {}
+    for key in schema.flattened_list(("name"), value=True, seq=True):
+        (ev, es) = key
+        if ev in name_keys:
+            name_keys[ev]=False
+        else:
+            name_keys[ev]=es
+            name_recurs[ev]=[]
+    for (ev, es) in schema.flattened_list(("insert"), value=True, seq=True):
+        if ev in name_keys:
+            if name_keys[ev] is False:
+                t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
+                error_list.append(t)
+            else:
+                print "inserting ", ev, es, name_keys[ev]
+        else:
+            t = ("schema", es, "'name {}' not found in schema".format(ev))
+            error_list.append(t)
+    return schema, error_list
+
 def MARDS_to_python(doc=None, schema=None, context="doc", tab_strict=False):
     r, error_list = MARDS_to_rolne(doc, schema, context=context, tab_strict=tab_strict)
     if schema:
@@ -163,6 +189,11 @@ zoom_flag False'''
 
         schema = '''
 ordered False
+name blink
+    value
+        type label
+        required
+    name rate
 name item
     treatment unique
     value
@@ -178,11 +209,13 @@ name item
         treatment concat
         value
             default "unknown"
+    insert blink
 name zoom_flag
     treatment one
     value
         required
         default True
+    name color
 name boing
     required
     value
@@ -199,12 +232,12 @@ name system_title
 
         #print my_doc
         print schema
-        #x,e = MARDS_to_rolne(schema, schema_schema)
-        x,e = MARDS_to_rolne(my_doc, schema, tab_strict=True)
-        y,e = MARDS_to_rolne(my_doc, schema, tab_strict=True)
+        x,e = _SCHEMA_to_rolne(schema)
+        #x,e = MARDS_to_rolne(my_doc, schema, tab_strict=True)
+        #y,e = MARDS_to_rolne(my_doc, schema, tab_strict=True)
         #x,e = MARDS_to_python(my_doc, schema)
-        for ctr, line in enumerate(my_doc.split("\n")):
-            print ctr, line
+        #for ctr, line in enumerate(my_doc.split("\n")):
+        #    print ctr, line
         print "FINAL:\n"
         print x._explicit()
         print "ERRORS:\n"
