@@ -8,46 +8,6 @@ from rolne import rolne
 
 import mards_library as ml
 
-schema_schema = '''
-ordered false
-name ordered
-    treatment one
-    required
-    value
-        type boolean
-        required
-        default True
-name name
-    treatment unique
-    value
-        type label
-        required
-    name ordered
-        treatment one
-        required
-        value
-            type boolean
-            required
-            default True
-    name required
-        treatment one
-        required
-        value
-            type boolean
-            required
-            default False
-    name treatment
-        value
-        type label
-    name value
-        name type
-        name required
-        name default
-    recurse name
-'''
-
-
-
 def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False):
     result = rolne()
     error_list = []
@@ -91,30 +51,69 @@ def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False):
         error_list.extend(schema_errors)
     return result, error_list
 
-
+# TODO: sit down and figure out loop detection
 def _SCHEMA_to_rolne(doc=None):
-    schema, error_list = MARDS_to_rolne(doc)
+    schema, error_list = MARDS_to_rolne(doc, context="schema", tab_strict=True)
     # build a list of names from the document and their corresponding locations
     # mark as False if the key is seen twice
-    name_keys = {}
+    name_seq = {}
     name_recurs = {}
-    for key in schema.flattened_list(("name"), value=True, seq=True):
-        (ev, es) = key
-        if ev in name_keys:
-            name_keys[ev]=False
-        else:
-            name_keys[ev]=es
-            name_recurs[ev]=[]
-    for (ev, es) in schema.flattened_list(("insert"), value=True, seq=True):
-        if ev in name_keys:
-            if name_keys[ev] is False:
-                t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
-                error_list.append(t)
+    for key in schema.flattened_list( (), name=True, value=True, seq=True):
+        (en, ev, es) = key
+        if en=="name":
+            if ev in name_seq:
+                name_seq[ev]=False
             else:
-                print "inserting ", ev, es, name_keys[ev]
+                name_seq[ev]=es
+        elif en in ["treatment", "value", "insert", "required", "default", "ordered", "type", "recurse"]:
+            pass
         else:
-            t = ("schema", es, "'name {}' not found in schema".format(ev))
+            t = ("schema", es, "'{}' not a recognized schema element name".format(en))
             error_list.append(t)
+            schema.seq_delete(es)
+    schema_list = schema.flattened_list(("insert"), value=True, seq=True)
+    while schema_list:
+        for (ev, es) in schema_list:
+            if ev in name_seq:
+                if name_seq[ev] is False:
+                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
+                    error_list.append(t)
+                    schema.seq_delete(es)
+                else:
+                    prefix = es+"_"
+                    src = name_seq[ev]
+                    schema.seq_replace(es, src, prefix)
+                    #name_recurs[src].append(prefix)
+            else:
+                t = ("schema", es, "'name {}' not found in schema".format(ev))
+                error_list.append(t)
+                schema.seq_delete(es)
+        schema_list = schema.flattened_list(("insert"), value=True, seq=True)
+    schema_list = schema.flattened_list(("recurse"), value=True, seq=True)
+    safety_ctr=0
+    while schema_list and safety_ctr<2:
+        for (ev, es) in schema_list:
+            if ev in name_seq:
+                if name_seq[ev] is False:
+                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
+                    error_list.append(t)
+                    schema.seq_delete(es)
+                else:
+                    prefix = es+"_"
+                    src = name_seq[ev]
+                    line = schema.seq_lineage(es)
+                    if name_seq[ev] in line:
+                        schema.seq_replace(es, src, prefix)
+                        print "jr",line
+                    else:
+                        error_list.append(("schema", es, "'recurse {}' is not recursive".format(ev)))
+                        schema.seq_delete(es)
+            else:
+                t = ("schema", es, "'name {}' not found in schema".format(ev))
+                error_list.append(t)
+                schema.seq_delete(es)
+        schema_list = schema.flattened_list(("recurse"), value=True, seq=True)
+        safety_ctr += 1
     return schema, error_list
 
 def MARDS_to_python(doc=None, schema=None, context="doc", tab_strict=False):
@@ -194,6 +193,7 @@ name blink
         type label
         required
     name rate
+    insert item
 name item
     treatment unique
     value
@@ -209,7 +209,6 @@ name item
         treatment concat
         value
             default "unknown"
-    insert blink
 name zoom_flag
     treatment one
     value
@@ -221,6 +220,7 @@ name boing
     value
         required
         default joejoe
+    recurse boing
 name code_seq
     value
         ordered False
