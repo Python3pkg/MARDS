@@ -1,0 +1,34 @@
+#!mards_schema_1.0_en workstep_grammer_0.2
+    title "Grammer for Worksteps"
+
+template workstep_grammer
+    search industry
+        match 'woodworking'
+            search function
+                match 'cut_board'
+                    extend woodworking.cut_board
+                match 'small_carve'
+                    extend woodworking.small_carve
+        match 'metalcraft'
+            search function
+                match 'small_mill'
+                    extend metalcraft.small_mill
+                match 'welding'
+                    extend metalcraft.welding 
+
+                    
+template woodworking.cut_board
+    name length
+        value
+            required
+            type length
+    name width
+        value
+            required
+            type length
+
+template woodworking.small_carve
+    name part_file
+        value
+            required
+            type file

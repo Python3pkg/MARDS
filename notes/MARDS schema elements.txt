@@ -6,6 +6,31 @@ The default for any entry in a MARDS Schema Document is:
         value
             type string
 
+One can declare the schema for a document on the top declaritive lines:
+
+    doc:
+        #!MARDS_en_1.0 my_doc
+            schema thename
+
+There can ONLY be one schema for a data document
+
+Alternatively, one can embed a schema directly into the data
+document with the '#schema' element.
+
+    doc:
+        #!MARDS_en_1.0
+        
+        #schema
+            name document_title
+            name summary
+            name section
+                value
+                    required
+                name description
+
+There can only be one such '#schema' if one is found in the document.
+          
+            
 -----------------------
 TREATMENT TYPES
 -----------------------
@@ -285,6 +310,7 @@ Example 3 (both name and value are required):
         output joe
         # id is 'hello'
         
+
 ----------------- 
 the 'ordered' flag
 -----------------
@@ -686,8 +712,8 @@ Would become, in python:
 NOTE regarding ROLNE
 
 The rolne data type, if used rather than python's built-in types, also makes
-queries easy. The 'ordered' and 'treatment' clues are simply not needed. Using
-the same example:
+queries easy. The 'ordered' and 'treatment' clues that are simply not needed.
+Using the same example:
 
     SCHEMA:
 
@@ -722,8 +748,8 @@ the same example:
 INSERT and RECURSION
 -------------------------
 MARDS let you "insert" a copy of another element with the 'insert' element.
-The insert simply references another 'name' element with the same label. So,
-instead of writing:
+The insert simply references another 'name' or 'template' element with the
+same label. So, instead of writing:
 
     name box
         name params
@@ -747,7 +773,7 @@ one could simply write:
         insert params
 
 Of course, in order for the 'insert' to work, the referenced label must only
-exist ONCE in the entire document.
+exist ONCE in the entire current document.
 
 The MARDS schema also supports recursion, but with 'recurse' rather than
 'insert'. Othwerwise it behaves in a similar manner. For example:
@@ -782,7 +808,7 @@ The MARDS schema also supports recursion, but with 'recurse' rather than
             description "blah blah blah"
             
 
-Again, the label must unique in the document.
+Again, the label must unique in the current document.
 
 'recurse' also supports a sub-element called 'limit'. This essentially sets the
 qty of recursive loops to go through. So,
@@ -804,28 +830,89 @@ The final difference simply being that recurse must be self-referential and
 insert must not be.
 
 SIDEBAR: If 'recurse' and 'insert' really do the same thing, why are
-there two different elements? It was done purposefully to prevent
-accidents on the part of the person designing the schema. The designers of
-this schema have yet to come with a scenario where one needs an element to
-be either. Generally, either:
+    there two different elements? It was done purposefully to prevent
+    accidents on the part of the person designing the schema. The designers of
+    this schema have yet to come with a scenario where one needs an element to
+    be either. Generally, either:
 
-A. The designer specifically means for it to be recursive. In which case flagging
-it as non-recursive is useful for debugging. Or,
+    A. The designer specifically means for it to be recursive. In which case flagging
+    it as non-recursive is useful for debugging. Or,
 
-B. The designer did not intend for recursion and such recursion has came about from
-a "hidden" loop of multiple inserts. A "a->b->c->a" type of loop. In that case,
-flagging it as an error is very useful for debugging.
+    B. The designer did not intend for recursion and such recursion has came about from
+    a "hidden" loop of multiple inserts. A "a->b->c->a" type of loop. In that case,
+    flagging it as an error is very useful for debugging.
 
-If a reason is found for a super-flexible "either", then it might be added
-to the spec in a later release. It will very likely have a different element
-name.
+    If a reason is found for a super-flexible "either", then it might be added
+    to the spec in a later release. It will very likely have a different element
+    name.
 
 SIDEBAR: Why can't I have an unlimited 'recurse'? Philisophically, MARDS
-documents _always_ resolve to static deterministic data sets. Allowing
-infinite recursion prevents such a resolution.
+    documents _always_ resolve to static deterministic data sets. Allowing
+    infinite recursion prevents such a resolution.
 
-Only a schema document can be recursive. A data document cannot (or
-should not) be. 
+    Only a schema document can be recursive. A data document cannot (or
+    should not) be. 
+
+The 'insert' and 'recurse' elements also support a 'from' sub-element. If used, then
+the name is NOT pulled form the current document, but from a '#context <label>' element.
+
+See IMPORT section below for more details.
+    
+----------------------------
+EXTEND
+----------------------------
+
+An 'extend' element is very similar to an 'insert', except that instead of
+being directly replaced with the named element, the children of named
+element are used for replacement.
+
+This is better seen by an example that compares 'insert' with 'extend':
+
+    EXAMPLE OF AN INSERT
+    
+        name a
+            name b
+            name c
+        name d
+            insert a
+    
+    THE RESULTING EQUIVALENT OF THE INSERT
+    
+        name a
+            name b
+            name c
+        name d
+            name a
+                name b
+                name c
+                
+    EXAMPLE OF AN EXTEND
+    
+        name a
+            name b
+            name c
+        name d
+            extend a
+    
+    THE RESULTING EQUIVALENT OF THE EXTEND
+    
+        name a
+            name b
+            name c
+        name d
+            name b
+            name c
+
+The 'extend' element does NOT support recursion in version 1.0 of MARDS.
+
+
+----------------------------
+TEMPLATES
+----------------------------
+
+A 'template' element is simply a 'name' element that is not actually used
+at it's location. Think of it as a procedure or a macro definition. It is
+useful for 'insert' and 'extend' references.
 
 ----------------------------
 TYPES
@@ -842,9 +929,8 @@ As of version 1.0, a define_type is simply:
     define_type <label>
     
 It is presumed an external program has been written to enfore its syntax.
-What follows is a possible example of expanded syntax for version 1.1:
 
-Example:
+What follows is a possible example of expanded syntax for version 1.1:
 
     SCHEMA:
     
@@ -882,69 +968,148 @@ Example:
 IMPORTS
 -------------------------------------
 
-On can declare the schema for a document on the top declaritive line:
+All importation of other documents is part of the top declarative lines:
 
-    %%MARDS_en_1.0 thename
+Each of the imports is "inserted" into the top of the document, in the 
+the same order in which they are referenced. However, they are each
+"prefixed" with a '#context' element:
 
-There can ONLY be one schema for a data document
+All rules seen here apply equally to regular documents and schemas
 
-Alternatively, one can embed a schema directly into the data
-documnt with the '%%schema' element.
+example:
 
-    %%MARDS_en_1.0
-    %%schema
-        name document_title
-        name summary
-        name section
+    document:
+
+        #!MARDS_en_1.0 my_doc
+            import zippy
+            
+        craft 99
+        landing northwest
+            
+    the 'zippy' document:
+
+        #!MARDS_en_1.0 oh_so_nice
+
+        hello world
+        skiddoo 23
+
+    This resolves to:
+    
+        #!MARDS_en_1.0 my_doc
+            
+        #context zippy
+            hello world
+            skiddoo 23
+        craft 99
+        landing northwest
+    
+A more typical usage found in schema docs:
+
+    document:
+
+        #!MARDS_schema_en_1.0 my_schema
+            import base_template
+            
+        name wallb_type3
             value
                 required
-            name description
-
-%%MARDS_schema_en_1.0
-import_type 3rdpart
-    repository schema.xyz.com
-import_type boolean
-    local "%lib/big_boolean.schema"
-        use my_boolean
-import_type my_type
-    direct http://www.outthere.com/my_type.mards
-import_type integer
-    repository common.mards.org
-import_type length
-    repository common.mards.org
-
-One of the following three elements can subtend an 'import' or '%%MARDS_en_1.0' element:
-
-    'local' means a schema document in the same location as this document.
-        The string that follows is the name of the document. There is no
-        exact standard for this string as it is presumed that any 'local'
-        use is not meant to be universal.
-        
-        This is the presumed default. So,
-        
-            %%MARDS_en_1.0 thename.schema
+            name color
+            extend wall_stuff
+                from base_template
             
-        is the same as:
-        
-            %%MARDS_en_1.0 thename.schema
-                local "thename.schema"
+    the 'base_template' document:
 
-    'repository' are schemas managed by a common web site or system and
-        are cached locally.
+        #!MARDS_schema_en_1.0 walls
+
+        template wall_stuff
+            name height
+            name width
+            name style
+
+    This resolves (after import) to:
+    
+        #!MARDS_schema_en_1.0 my_schema
+
+        #context base_template
+            template wall_stuff
+                name height
+                name width
+                name style
+        
+        name wallb_type3
+            value
+                required
+            name color
+            extend wall_stuff
+                from base_template
+
+    Which ultimately resolves (after 'extend' handling and cleanup) to:
+
+        #!MARDS_schema_en_1.0 my_schema
+
+        name wallb_type3
+            value
+                required
+            name color
+            name height
+            name width
+            name style
+
+IMPORT METHODS
+
+    EXAMPLE
+    
+        #!MARDS_schema_en_1.0 thename
+            import 3rdpart
+                repository def.xyz.com
+            import boolean
+                local "%lib/big_boolean.schema"
+            import length
+                library better_length
+
+One of the following three elements of import can subtend an 'import' element:
+
+    'library' means the document is embedded into the the library being used
+        to read the MARDS document. This is library specific.
+
+    'local' means a document in the same system as this document.
+        If there is a string that follows, it is the system-specific name of
+        the document.
+        
+        First example:
+        
+            import something
+                local
+            
+        MIGHT mean "find './something.mards'" on a UNIX-like system. Details
+        of interpretation should be specified by the library reading the
+        MARDS document.
+
+        Another example:
+        
+            import something
+                local '%userprofile%\lib\something.MRD'
+                
+        MIGHT mean "find 'something.MRD' in the 'lib' directory in the current
+        user's document directory' on a MS Windows 7 system. Details are system
+        specific.
+        
+        If you are wanting to be as 'universal' as possible, then don't specify
+        a string for the 'local' element. This is also the default.
+        
+    'repository' are schemas managed by a common web site or system. As a courtesy,
+        one should honor any request to cache or prefetch the documents locally.
        
-        The following is tried by default:
+        An example:
        
             import abc
                 repository xyz.domain.com
         
         pulls from:
         
-            https://repository.xyz.domain.com/schema?name=abc.schema
+            https://repository.xyz.domain.com/document?label=abc.mards
         
-        The 'https://repository.' prefix and the '/schema?name=' and '{}.schema'
-        suffixes are the
-        defaults. These can be changed with 'prefix', 'middle', and 'suffix' sub
-        elements.
-        
-    'direct' is a standardized uri used to retreive the MARDS schema doc.
+        The 'https://repository.' prefix and the '/document?label=' and '{}.mards'
+        suffixes are the defaults in version 1.0 of the MARDS spec. These can be
+        changed with 'prefix', 'middle', and 'suffix' sub elements.
 
