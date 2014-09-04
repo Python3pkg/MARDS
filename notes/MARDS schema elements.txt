@@ -1113,3 +1113,117 @@ One of the following three elements of import can subtend an 'import' element:
         suffixes are the defaults in version 1.0 of the MARDS spec. These can be
         changed with 'prefix', 'middle', and 'suffix' sub elements.
 
+        
+----------------------
+COMMENTS
+----------------------
+
+Comments are given non-standard name of '##'. It is non-standard in the sense that '#'
+not normally one of the permitted characters in a label.
+
+An example:
+
+    ##  the following element is for giving joe a name. blah blah.
+    name joe
+
+Also valid:
+
+    ## ####################
+    ##    begin part A
+    ## ####################
+    
+But this is NOT valid:
+
+    ######################
+    ##    begin part A
+    ######################
+
+The 'space' after '##' is required. Not having breaks the parsing engine and violates
+the general character of a MARDS document.
+
+----------------------
+DOCUMENTATION
+----------------------
+
+Documentation can be added to a MARDS Schema. There are two purposes to the
+documentation:
+
+* Helping a human reading the Schema document understand it's contents.
+* Auto-generating other documentation and formats (such as HTML).
+
+As much as possible, the documentation should be conform to the APA 6th edition
+style of writing. For more details, visit http://www.apastyle.org.
+
+For this, the 'describe <lang>' element allows a descrition to be attached to a 'name'
+or 'template'. The <lang> value refers to a ISO 639-1:2002 language code. Or, if
+needed, it can be a more specific IETF BCP 41 language tag.
+
+Under this describe element, various sub-elements may be added:
+
+'title <text>':
+    A longer title for the element. Per APA guidlines: limited to 12 words
+    and limited to 150 characters.
+
+'abstract <text>':
+    A short summary of what the element is for and it's description. Per APA guidlines
+    limited to 120 words. However, much shorter abstracts are common. Should be written
+    in plain Markdown with a single extension (see below).
+
+'body <text>':
+    The bulk of the documentation. No length limit. Whould be written in plain 
+    Markdown markup language. See http://daringfireball.net/projects/markdown/.
+    
+    To keep thing readable, it is common to use one "body" element per line of 
+    text. The results are joined with newlines in-between each "body" element.
+    
+'reference <label>':
+    A individual footnote or citation. Should conform to APA guidelines. Can be
+    used in the 'body' elements. See Markdown Extension.
+    The following sub-elements are supported but not defined yet: 'author',
+    'title', 'url', 'journal', 'book', 'date_written', 'date_retreived', 'pages',
+    'paragraphs', 'copyright_notice'.
+
+An example:
+
+    name extreme
+        value
+            required
+            type choice
+                choice "good"
+                choice "evil"
+        describe en
+            title "Moral Extremity Choice"
+            abstract 'Selected choice of an extreme of either good or evil.'
+            body "Lorem ipsum dolor sit amet, consectetur adipiscing elit,"
+            body "sed do eiusmod tempor incididunt ut labore et dolore"
+            body "magna aliqua. [^#old_latin] Ut enim ad minim veniam, quis nostrud"
+            body "exercitation ullamco laboris nisi ut aliquip ex ea commodo"
+            body "consequat."
+            body
+            body "*Duis aute* irure dolor in reprehenderit in voluptate velit esse
+            body "cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat
+            body "cupidatat non proident, sunt in culpa qui officia deserunt mollit"
+            body "anim id est body laborum."
+            reference old_latin
+                author Cicero
+                title "de Finibus Bonorum et Malorum"
+                date_written "circa 45 BCE"
+                date_retreived 2014-09-04
+                paragraph "Section 1.10.32"
+    
+----------------------
+Markdown Extension
+----------------------
+
+The original Markdown does not allow for footnotes and citations save for those
+simply implied by the writing itself.
+
+Later extensions have been added by 'MultiMarkdown', 'Markdown Extra', and others.
+However, those extensions all assume the refered material is inside the document
+itself.
+
+This extension builds on those syntaxes extensions with a '[^#name]' extension, where
+the citation reference is enclosed by the '[^#' and ']' symbols and the label on the
+interior matches one of the 'reference' labels found under the 'describe' heading.
+
+Otherwise, none of the extensions to Markdown are supported.
