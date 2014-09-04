@@ -57,42 +57,49 @@ def _SCHEMA_to_rolne(doc=None):
     copy = schema.copy(seq_prefix="", seq_suffix="")
     # build a list of names from the document and their corresponding locations
     # mark as False if the key is seen twice
+    # also do basic syntax checking
     name_seq = {}
     name_recurs = {}
     for key in schema.flattened_list( (), name=True, value=True, seq=True):
         (en, ev, es) = key
-        if en=="name":
+        if en in ["name", "template"]:
             if ev in name_seq:
                 name_seq[ev]=False
             else:
                 name_seq[ev]=es
+        elif en in ["limit"]:
+            # TODO: check that parent is 'recurse'
+            # parent_es = schema.seq_parent(es)
+            # if schema.seq_name(parent_es) == 'recurse'
+            # TODO: if schema.seq_value is a number ...
+            pass
         elif en in ["treatment", "value", "insert", "required", "default", "ordered", "type", "recurse"]:
             pass
         else:
             t = ("schema", es, "'{}' not a recognized schema element name".format(en))
             error_list.append(t)
             schema.seq_delete(es)
-    #schema_list = schema.flattened_list(("insert"), value=True, seq=True)
-    #while schema_list:
-    #    for (ev, es) in schema_list:
-    #        if ev in name_seq:
-    #            if name_seq[ev] is False:
-    #                t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
-    #                error_list.append(t)
-    #                schema.seq_delete(es)
-    #            else:
-    #                prefix = es+"_"
-    #                src = name_seq[ev]
-    #                schema.seq_replace(es, src, prefix)
-    #                #name_recurs[src].append(prefix)
-    #        else:
-    #            t = ("schema", es, "'name {}' not found in schema".format(ev))
-    #            error_list.append(t)
-    #            schema.seq_delete(es)
-    #    schema_list = schema.flattened_list(("insert"), value=True, seq=True)
-    schema_list = schema.flattened_list(("recurse"), value=True, seq=True)
+    #################################
+    # IMPLEMENT 'template'
+    #
+    # This is done oddly: now that 'copy' has been made, we simply
+    # delete the templates from the rolne
+    #################################
+
+    #TODO: swap all 'template' names with 'name' names IN THE COPY
+    schema_list = schema.flattened_list(("template"), value=True, seq=True)
+    for (ev, es) in schema_list:
+        schema.seq_delete(es)
+        #TODO: swap all 'template' names with 'name' names IN THE COPY
+        #schema.seq_swap_name(es, "name")
+    #################################
+    #
+    # IMPLEMENT 'insert'
+    #
+    #################################
+    schema_list = schema.flattened_list(("insert"), value=True, seq=True)
     safety_ctr=0
-    while schema_list and safety_ctr<2:
+    while schema_list and safety_ctr<20:
         for (ev, es) in schema_list:
             if ev in name_seq:
                 if name_seq[ev] is False:
@@ -101,11 +108,54 @@ def _SCHEMA_to_rolne(doc=None):
                     schema.seq_delete(es)
                 else:
                     src = name_seq[ev]
-                    #prefix = "r_"+es+"_"+src+"_"
-                    prefix = "r_"+src+".1_" # TODO: make the .1 a real counter
+                    depth_desired = 1
                     line = schema.seq_lineage(es)
+                    new_depth = len(line)-1 
+                    prefix = src+".i"+str(new_depth)+"."
                     if name_seq[ev] in line:
+                        error_list.append(("schema", es, "'insert {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
+                        schema.seq_delete(es)
+                    else:
                         schema.seq_replace(es, copy.ptr_to_seq(src), prefix)
+                        print "ib insert"
+                        print "ir",line
+            else:
+                t = ("schema", es, "'name {}' not found in schema".format(ev))
+                error_list.append(t)
+                schema.seq_delete(es)
+        schema_list = schema.flattened_list(("insert"), value=True, seq=True)
+        safety_ctr += 1
+    #################################
+    #
+    # IMPLEMENT 'resurse' recursion
+    #
+    #################################
+    schema_list = schema.flattened_list(("recurse"), value=True, seq=True)
+    safety_ctr=0
+    while schema_list and safety_ctr<20:
+        for (ev, es) in schema_list:
+            if ev in name_seq:
+                if name_seq[ev] is False:
+                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
+                    error_list.append(t)
+                    schema.seq_delete(es)
+                else:
+                    src = name_seq[ev]
+                    depth_desired = schema.at_seq(es).value("limit")
+                    if depth_desired is None:
+                        depth_desired = 2
+                    else:
+                        depth_desired = int(depth_desired)
+                    line = schema.seq_lineage(es)
+                    new_depth = len(line)-1 
+                    prefix = src+".r"+str(new_depth)+"."
+                    if name_seq[ev] in line:
+                        if new_depth<=depth_desired:
+                            schema.seq_replace(es, copy.ptr_to_seq(src), prefix)
+                            print "jb replace"
+                        else:
+                            schema.seq_delete(es)
+                            print "jb stop"
                         print "jr",line
                     else:
                         error_list.append(("schema", es, "'recurse {}' is not recursive".format(ev)))
@@ -116,6 +166,9 @@ def _SCHEMA_to_rolne(doc=None):
                 schema.seq_delete(es)
         schema_list = schema.flattened_list(("recurse"), value=True, seq=True)
         safety_ctr += 1
+    ########################
+    #   DONE
+    ########################
     return schema, error_list
 
 
@@ -196,7 +249,9 @@ name blink
         type label
         required
     name rate
-    insert item
+    insert abc
+template abc
+    name joex
 name item
     treatment unique
     value
@@ -224,6 +279,7 @@ name boing
         required
         default joejoe
     recurse boing
+        limit 4
 name code_seq
     value
         ordered False

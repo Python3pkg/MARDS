@@ -816,13 +816,13 @@ qty of recursive loops to go through. So,
     recurse my_name
         limit 5
         
-Will only recurse 5 times before stopping. The 'default' for recurse is 12. It
+Will only recurse 5 times before stopping. The 'default' for recurse is 2. It
 should be noted that:
 
     recurse my_name
         limit 1
 
-is almost the same thing as:
+is *almost* the same thing as:
 
     insert my_name
     

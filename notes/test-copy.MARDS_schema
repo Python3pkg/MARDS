@@ -1,0 +1,238 @@
+#!MARDS_schema_en_1.0 maker_redux_recipe_0.2
+    describe
+        title "Maker Redux Recipe Format v1.0"
+    import workstep_grammer_doc
+        local
+    import part_grammer_doc
+        local
+
+## #########################
+##
+##   HEADER
+##
+## #########################
+name recipe
+    required
+    treatment one
+    value
+        type label
+        required
+name id
+    required
+    treatment one
+    value
+        type hexcode
+        required
+## #########################
+##
+##   MAKER
+##
+## #########################
+name maker
+    required
+    treatment unique
+    value
+        type label
+        required
+        default default_maker
+    name __origin_id
+        treatment one
+        value
+            type hexcode
+    name version
+        treatment one
+        required
+            value
+                required
+                default "mr0.2"
+    name company_id
+        treatment one
+        value
+            type hexcode
+            required
+    name company_name
+        treatment one
+    name url
+    name description
+        treatment sum
+## #########################
+##
+##   PARAMETER
+##
+## #########################
+name parameter
+    value
+        type label
+        required
+    treatment unique
+    name __origin_id
+        treatment one
+        value
+            type hexcode
+    name version
+        treatment one
+        required
+            value
+                required
+                default "mr0.1"
+    name description
+        treatment sum
+    name type
+        treatment one
+        required
+        value
+            type label
+            required
+    name title
+        treatment one
+    name default_value
+        treatment one
+    name default_unit
+        treatment one
+    name choices
+## #########################
+##
+##   WORKSTEP
+##
+## #########################
+name workstep
+    value
+        type label
+        required
+    treatment unique
+    name __origin_id
+        treatment one
+        value
+            type hexcode
+    name version
+        treatment one
+        required
+            value
+                required
+                default "mr0.1"
+    name description
+        treatment sum
+    name maker
+        treatment one
+        required
+        value
+            type label
+            required
+            default default_maker
+    name typical_cost
+        treatment one
+        required
+        value
+            type currency
+            required
+    name input
+        value
+            type label
+            required
+    name output
+        value
+            type label
+            required
+        name final
+            treatment one
+            value
+                type boolean
+                default True
+        name qty
+            treatment one
+            required
+            value
+                type integer
+                    min 1
+                required
+                default 1
+    name instructions
+        treatment sum
+    name pre_event_timer
+        treatment one
+        value
+            required
+            type duration
+            default "0s"
+    name post_event_timer
+        treatment one
+        value
+            required
+            type duration
+            default "0s"
+    name industry   
+    ## was formerly called 'station'
+        treatment one
+        required
+        value
+            type label
+            required
+    name function   
+    ## was formerly called 'command'
+        treatment one
+        required
+        value
+            type label
+            required
+    extend workstep_grammer
+        from workstep_grammer_doc
+## #########################
+##
+##   PART
+##
+## #########################
+name part
+    value
+        type label
+        required
+    treatment unique
+    name __origin_id
+        treatment one
+        value
+            type hexcode
+    name version
+        treatment one
+        required
+            value
+                required
+                default "mr0.1"
+    name description
+        treatment sum
+    name maker
+        treatment one
+        required
+        value
+            type label
+            required
+            default default_maker
+    name typical_cost
+        treatment one
+        required
+        value
+            type currency
+            required
+    name sku_source
+        treatment one
+        value
+            type string
+            required
+    name sku
+        treatment one
+        value
+            type string
+            required
+    name qty
+        treatment one
+        required
+        value
+            type integer
+                min 1
+            required
+            default 1
+    name category
+        required
+        value
+            type label
+            required
+    extend parts_grammer
+        from part_grammer_doc
