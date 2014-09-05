@@ -69,11 +69,22 @@ def _SCHEMA_to_rolne(doc=None):
                 name_seq[ev]=es
         elif en in ["limit"]:
             # TODO: check that parent is 'recurse'
-            # parent_es = schema.seq_parent(es)
-            # if schema.seq_name(parent_es) == 'recurse'
-            # TODO: if schema.seq_value is a number ...
-            pass
-        elif en in ["treatment", "value", "insert", "required", "default", "ordered", "type", "recurse"]:
+            parent_es = schema.seq_parent(es)
+            if schema.at_seq(parent_es).name()!='recurse':
+                error_list.append( ("schema", es, "the 'limit' element may only be applied to a 'recurse'") )
+                schema.seq_delete(es)
+                copy.seq_delete(es)
+            else:
+                if ev.isdigit():
+                    if int(ev)<1 or int(ev)>20:
+                        error_list.append( ("schema", es, "the 'limit' should have a integer value between 1 and 20") )
+                        schema.seq_delete(es)
+                        copy.seq_delete(es)
+                else:
+                    error_list.append( ("schema", es, "the 'limit' should have a integer value between 1 and 20") )
+                    schema.seq_delete(es)
+                    copy.seq_delete(es)
+        elif en in ["treatment", "value", "insert", "required", "default", "ordered", "type", "recurse", "extend"]:
             pass
         else:
             t = ("schema", es, "'{}' not a recognized schema element name".format(en))
@@ -83,15 +94,14 @@ def _SCHEMA_to_rolne(doc=None):
     # IMPLEMENT 'template'
     #
     # This is done oddly: now that 'copy' has been made, we simply
-    # delete the templates from the rolne
+    # delete the templates from the  active rolne and rename 'template' to
+    # 'name' in the copy.
     #################################
 
-    #TODO: swap all 'template' names with 'name' names IN THE COPY
     schema_list = schema.flattened_list(("template"), value=True, seq=True)
     for (ev, es) in schema_list:
         schema.seq_delete(es)
-        #TODO: swap all 'template' names with 'name' names IN THE COPY
-        #schema.seq_swap_name(es, "name")
+        copy.at_seq(es).set_name("name")
     #################################
     #
     # IMPLEMENT 'insert'
@@ -110,20 +120,52 @@ def _SCHEMA_to_rolne(doc=None):
                     src = name_seq[ev]
                     depth_desired = 1
                     line = schema.seq_lineage(es)
-                    new_depth = len(line)-1 
+                    new_depth = len(line) 
                     prefix = src+".i"+str(new_depth)+"."
                     if name_seq[ev] in line:
                         error_list.append(("schema", es, "'insert {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
                         schema.seq_delete(es)
                     else:
                         schema.seq_replace(es, copy.ptr_to_seq(src), prefix)
-                        print "ib insert"
-                        print "ir",line
             else:
                 t = ("schema", es, "'name {}' not found in schema".format(ev))
                 error_list.append(t)
                 schema.seq_delete(es)
         schema_list = schema.flattened_list(("insert"), value=True, seq=True)
+        safety_ctr += 1
+    #################################
+    #
+    # IMPLEMENT 'extend'
+    #
+    #################################
+    schema_list = schema.flattened_list(("extend"), value=True, seq=True)
+    safety_ctr=0
+    while schema_list and safety_ctr<20:
+        for (ev, es) in schema_list:
+            if ev in name_seq:
+                if name_seq[ev] is False:
+                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
+                    error_list.append(t)
+                    schema.seq_delete(es)
+                else:
+                    src = name_seq[ev]
+                    depth_desired = 1
+                    line = schema.seq_lineage(es)
+                    new_depth = len(line) 
+                    prefix = src+".e"+str(new_depth)+"."
+                    if name_seq[ev] in line:
+                        error_list.append(("schema", es, "'extend {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
+                        schema.seq_delete(es)
+                    else:
+                        parent = schema.at_seq(schema.seq_parent(es))
+                        children = copy.at_seq(src)
+                        parent.extend(children, prefix=prefix)
+                        schema.seq_delete(es)
+            else:
+                t = ("schema", es, "'name {}' not found in schema".format(ev))
+                error_list.append(t)
+                schema.seq_delete(es)
+        schema_list = schema.flattened_list(("extend"), value=True, seq=True)
         safety_ctr += 1
     #################################
     #
@@ -152,11 +194,8 @@ def _SCHEMA_to_rolne(doc=None):
                     if name_seq[ev] in line:
                         if new_depth<=depth_desired:
                             schema.seq_replace(es, copy.ptr_to_seq(src), prefix)
-                            print "jb replace"
                         else:
                             schema.seq_delete(es)
-                            print "jb stop"
-                        print "jr",line
                     else:
                         error_list.append(("schema", es, "'recurse {}' is not recursive".format(ev)))
                         schema.seq_delete(es)
@@ -252,6 +291,8 @@ name blink
     insert abc
 template abc
     name joex
+        required
+    name joey
 name item
     treatment unique
     value
@@ -267,6 +308,7 @@ name item
         treatment concat
         value
             default "unknown"
+        extend abc
 name zoom_flag
     treatment one
     value
@@ -279,7 +321,7 @@ name boing
         required
         default joejoe
     recurse boing
-        limit 4
+        limit 3
 name code_seq
     value
         ordered False

@@ -1141,6 +1141,9 @@ But this is NOT valid:
 The 'space' after '##' is required. Not having breaks the parsing engine and violates
 the general character of a MARDS document.
 
+Comments are permitted in both MARDS and MARDS schema documents. In both cases, the
+the entire line, including it's indentation, is completely skipped over.
+
 ----------------------
 DOCUMENTATION
 ----------------------
@@ -1181,7 +1184,7 @@ Under this describe element, various sub-elements may be added:
     used in the 'body' elements. See Markdown Extension.
     The following sub-elements are supported but not defined yet: 'author',
     'title', 'url', 'journal', 'book', 'date_written', 'date_retreived', 'pages',
-    'paragraphs', 'copyright_notice'.
+    'paragraphs', 'copyright_message', 'publisher'.
 
 An example:
 
@@ -1193,17 +1196,17 @@ An example:
                 choice "evil"
         describe en
             title "Moral Extremity Choice"
-            abstract 'Selected choice of an extreme of either good or evil.'
+            abstract 'Selected user's choice of an extreme of either good or evil.'
             body "Lorem ipsum dolor sit amet, consectetur adipiscing elit,"
             body "sed do eiusmod tempor incididunt ut labore et dolore"
-            body "magna aliqua. [^#old_latin] Ut enim ad minim veniam, quis nostrud"
+            body "magna aliqua. ^[#](old_latin) Ut enim ad minim veniam, quis nostrud"
             body "exercitation ullamco laboris nisi ut aliquip ex ea commodo"
             body "consequat."
             body
             body "*Duis aute* irure dolor in reprehenderit in voluptate velit esse
             body "cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat
             body "cupidatat non proident, sunt in culpa qui officia deserunt mollit"
-            body "anim id est body laborum."
+            body "anim id est body laborum. (emphasis mine.)"
             reference old_latin
                 author Cicero
                 title "de Finibus Bonorum et Malorum"
@@ -1218,12 +1221,47 @@ Markdown Extension
 The original Markdown does not allow for footnotes and citations save for those
 simply implied by the writing itself.
 
-Later extensions have been added by 'MultiMarkdown', 'Markdown Extra', and others.
+Later extensions for  have been added by 'MultiMarkdown', 'Markdown Extra', and others.
 However, those extensions all assume the refered material is inside the document
 itself.
 
-This extension builds on those syntaxes extensions with a '[^#name]' extension, where
-the citation reference is enclosed by the '[^#' and ']' symbols and the label on the
-interior matches one of the 'reference' labels found under the 'describe' heading.
+Fortunately, original Markdown specification does have a form of external reference: images. In Markdown, images from outside the document appear given one of these two syntaxes:
 
-Otherwise, none of the extensions to Markdown are supported.
+* ![Alt text](path/to/img.jpg "Optional title")
+* ![Alt text][id]
+
+  where [id] refers to an in-document link reference.
+
+syntax. It is the preceding exclamation point *outside* the brackets is what causes the Markdown interpreter to assume the external reference is not an URL or internal citation, but instead an external inclusion.
+
+In that same, way, MARDS is extending Markdown with it's own predeccesor: the carot (^). The syntax is :
+
+* ^[text](reference_label)
+
+If 'text' is simply set to '#', then the Markdown extension will replace # with an automatic numbering.
+
+So, for example:
+
+    body "magna aliqua. ^[#](old_latin) Ut enim ad minim veniam, quis nostrud"
+    reference old_latin
+        author Cicero
+        title "de Finibus Bonorum et Malorum"
+        date_written "45 BCE"
+        paragraph "Section 1.10.32"
+
+Might produce HTML similar to :
+
+    magna aliqua. <sup><a href="#foot_1" id="ref_1">1</a></sup> Ut enim ad minim veniam, quis nostrud
+    <hr></hr>
+    <sup id="fn1">1</sup>Cicero (45 BCE). <i>de Finibus Bonorum et Malorum</i> Section 1.10.32. <a href="#ref_1" title="back">^</a>
+
+For an APA-style In-Text citation:
+
+    body "magna aliqua. ^[(Cicero, 45 BCE)](old_latin) Ut enim ad minim veniam, quis nostrud"
+    reference old_latin
+        author Cicero
+        title "de Finibus Bonorum et Malorum"
+        date_written "45 BCE"
+        paragraph "Section 1.10.32"
+   
+None of the other extensions to Markdown are supported.
