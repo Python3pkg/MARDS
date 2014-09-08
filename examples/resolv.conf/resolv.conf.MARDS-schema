@@ -1,0 +1,172 @@
+MARDS_schema_en_1.0 resolv.conf_1.0
+    describe
+        title "Linux /etc/resolv.conf v1.0"
+        body "The resolver is a set of routines in the C library that provide"
+        body "access to the Internet Domain Name System (DNS). The resolver"
+        body "configuration file contains information that is read by the"
+        body "resolver routines the first time they are invoked by a process."
+        body ""
+        body "The file is designed to be human readable and contains a list of"
+        body "keywords with values that provide various types of resolver"
+        body "information."
+        body ""
+        body "If this file does not exist, only the name server on the local machine will be queried; the domain name is determined from the hostname and the domain search path is constructed from the domain name."
+        
+## nameserver Name server IP addres
+
+name nameserver
+    treatment unique
+    value
+        required
+        type string
+    describe
+        title "Internet Address of a Name Server"
+        body "Internet address of a name server that the resolver should query,"
+        body "either an IPv4 address (in dot notation), or an IPv6 address in"
+        body "colon (and possibly dot) notation as per RFC 2373. Up to *MAXNS*"
+        body "(currently 3, see _<resolv.h>_) name servers may be listed, one per"
+        body "keyword. If there are multiple servers, the resolver library"
+        body "queries them in the order listed. If no nameserver entries are"
+        body "present, the default is to use the name server on the local machine."
+        body "(The algorithm used is to try a name server, and if the query times"
+        body "out, try the next, until out of name servers, then repeat trying all"
+        body "the name servers until a maximum number of retries are made.)"
+        body ""
+        body "The _domain_ and _search_ keywords are mutually exclusive. If more than one instance of these keywords is present, the last instance wins."
+        body ""
+        body "The _search_ keyword of a system's resolv.conf file can be overridden on a per-process basis by setting the environment variable LOCALDOMAIN to a space-separated list of search domains."
+        body ""
+        body "The _options_ keyword of a system's resolv.conf file can be amended on a per-process basis by setting the environment variable RES_OPTIONS to a space-separated list of resolver options as explained above under options."
+        body ""
+        body "The keyword and value must appear on a single line, and the keyword (e.g., nameserver) must start the line. The value follows the keyword, separated by white space."
+
+## domain Local domain name
+
+name domain
+    treatment last
+    value
+        required
+        type domain_name
+    describe
+        title "Local Domain Name"
+        body "Most queries for names within this domain can use short names relative"
+        body "to the local domain. If no domain entry is present, the domain is"
+        body "determined from the local hostname returned by *gethostname(2);* the"
+        body "domain part is taken to be everything after the first '.'. Finally,"
+        body "if the hostname does not contain a domain part, the root domain is"
+        body "assumed."
+
+## search Search list for host-name lookup. 
+
+name search
+    treatment unique
+    value
+        required
+        type domain-name
+    describe
+        title "Search List for Host-Name Lookup"
+        body "The search list is normally determined from the local domain name; by default, it contains only the local domain name. This may be changed by listing the desired domain search path following the search keyword with spaces or tabs separating the names. Resolver queries having fewer than ndots dots (default is 1) in them will be attempted using each component of the search path in turn until a match is found. For environments with multiple subdomains please read options ndots:n below to avoid man-in-the-middle attacks and unnecessary traffic for the root-dns-servers. Note that this process may be slow and will generate a lot of network traffic if the servers for the listed domains are not local, and that queries will time out if no server is available for one of the domains.
+        body ""
+        body "The search list is currently limited to six domains with a total of 256 characters. "
+
+## sortlist
+
+name sortlist
+    treatment one
+    describe
+        title "Sort Results"
+        body "This option allows addresses returned by gethostbyname(3) to be sorted. A sortlist is specified by IP-address-netmask pairs. The netmask is optional and defaults to the natural netmask of the net. The IP address and optional network pairs are separated by slashes. Up to 10 pairs may be specified. Here is an example:"
+        body ""
+        body "    `sortlist 130.155.160.0/255.255.240.0 130.155.0.0`" 
+
+## options
+
+name options
+    treatment unique
+    value
+        required
+        type select_list
+            seperator space
+            choice "debug"
+            prefix "ndots:"
+            prefix "timeout:"
+            prefix "attempts:"
+            choice "rotate"
+            choice "no-check-names"
+            choice "inet6"
+            choice "inet6-bytestring"
+            choice "ip6-dotint"
+            choice "no-ip6-dotint"
+            choice "edns0"
+            choice "single-request"
+            choice "single-request-reopen"
+    describe
+        title "Options List"
+        body "The format is:"
+        body ""
+        body "    `options _option_ _..._`"
+        body ""
+        body "where each _option_ is on of the following:"
+        body ""
+        body " *  `__debug__`"
+        body ""
+        body "    sets RES_DEBUG in \_res.options (only effective if glibc was built with debug support; see resolver(3)). "
+        body ""
+        body " *  `__ndots:__*n*`"
+        body ""
+        body "    sets a threshold for the number of dots which must appear in a name given to res_query(3) (see resolver(3)) before an initial absolute query will be made. The default for n is 1, meaning that if there are any dots in a name, the name will be tried first as an absolute name before any search list elements are appended to it. The value for this option is silently capped to 15."
+        body ""
+        body " *  `__timeout:__*n*`"
+        body ""
+        body "    sets the amount of time the resolver will wait for a response from a remote name server before retrying the query via a different name server. Measured in seconds, the default is RES_TIMEOUT (currently 5, see <resolv.h>). The value for this option is silently capped to 30."
+        body ""
+        body " *  `__attempts:__*n*`"
+        body ""
+        body "    sets the number of times the resolver will send a query to its name servers before giving up and returning an error to the calling application. The default is RES_DFLRETRY (currently 2, see <resolv.h>). The value for this option is silently capped to 5."
+        body ""
+        body " *  `__rotate__`"
+        body ""
+        body "    sets RES_ROTATE in \_res.options, which causes round-robin selection of nameservers from among those listed. This has the effect of spreading the query load among all listed servers, rather than having all clients try the first listed server first every time. "
+        body ""
+        body " *  `__no-check-names__` "
+        body ""
+        body "    sets RES_NOCHECKNAME in \_res.options, which disables the modern BIND checking of incoming hostnames and mail names for invalid characters such as underscore (_), non-ASCII, or control characters."
+        body ""
+        body " *  `__inet6"__
+        body ""
+        body "    sets RES_USE_INET6 in \_res.options. This has the effect of trying a AAAA query before an A query inside the gethostbyname(3) function, and of mapping IPv4 responses in IPv6 "tunneled form" if no AAAA records are found but an A record set exists. "
+        body ""
+        body " *  `__ip6-bytestring__`"
+        body "    _(since glibc 2.3.4)_ "
+        body ""
+        body "    sets RES_USE_BSTRING in \_res.options. This causes reverse IPv6 lookups to be made using the bit-label format described in RFC 2673; if this option is not set, then nibble format is used."
+        body ""
+        body " *  `__ip6-dotint__`"
+        body "    `__no-ip6-dotint__`"
+        body "    _(since glibc 2.3.4)_ "
+        body ""
+        body "    Clear/set RES_NOIP6DOTINT in \_res.options. When this option is clear (ip6-dotint), reverse IPv6 lookups are made in the (deprecated) ip6.int zone; when this option is set (no-ip6-dotint), reverse IPv6 lookups are made in the ip6.arpa zone by default. This option is set by default."
+        body ""
+        body " *  `__edns0__`"
+        body "    _(since glibc 2.6)_ "
+        body ""
+        body "    sets RES_USE_EDNSO in \_res.options. This enables support for the DNS extensions described in RFC 2671."
+        body ""
+        body " *  `__single-request__`"
+        body "    _(since glibc 2.10)_"
+        body ""
+        body "    sets RES_SNGLKUP in \_res.options. By default, glibc performs IPv4 and IPv6 lookups in parallel since version 2.9. Some appliance DNS servers cannot handle these queries properly and make the requests time out. This option disables the behavior and makes glibc perform the IPv6 and IPv4 requests sequentially (at the cost of some slowdown of the resolving process)."
+        body ""
+        body " *  `__single-request-reopen__`"
+        body "    _(since glibc 2.9)_ "
+        body ""
+        body "    The resolver uses the same socket for the A and AAAA requests. Some hardware mistakenly only sends back one reply. When that happens the client system will sit and wait for the second reply. Turning this option on changes this behavior so that if two requests from the same port are not handled correctly it will close the socket and open a new one before sending the second request."
+
+## comments
+ignore
+    prefix "#"
+    prefix ";"
+    describe
+        title "Comments"
+        body ""
+        body "Lines that contain a semicolon (;) or hash character (#) in the first column are treated as comments."
