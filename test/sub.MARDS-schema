@@ -1,0 +1,10 @@
+#!MARDS_schema_en_1.0 blah
+
+
+name galaxy
+
+template xx
+    name joeAxx
+        required
+    name joeBxx
+    

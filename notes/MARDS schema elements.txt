@@ -745,7 +745,7 @@ Using the same example:
     corn_year = doc.value('corn')
 
 -------------------------
-INSERT and RECURSION
+INSERTION and RECURSION
 -------------------------
 MARDS let you "insert" a copy of another element with the 'insert' element.
 The insert simply references another 'name' or 'template' element with the

@@ -85,8 +85,8 @@ name options
     treatment unique
     value
         required
-        type select_list
-            seperator space
+        type check_list
+            separator space
             choice "debug"
             prefix "ndots:"
             prefix "timeout:"

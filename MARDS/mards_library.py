@@ -3,7 +3,7 @@
 # INTERNAL SUPPORT ROUTINES
 #
     
-def parse_line(line, tab_list, tab_strict=False):
+def parse_line(line, tab_list, tab_strict=False, key_open=False):
     indent = None
     key = None
     value = None
@@ -17,7 +17,7 @@ def parse_line(line, tab_list, tab_strict=False):
                 space_ctr += 1
             elif c=="\n":
                 return (indent, key, value, error) # skip line if all whitespaces
-            elif c=="#":
+            elif c=="#" and key_open==False:
                 return (indent, key, value, error) # skip line if starts with # comment symbol
             elif len(c.strip())==0:
                 return (indent, key, value, "non-space whitespace character found before key")
