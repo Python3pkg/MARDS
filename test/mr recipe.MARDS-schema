@@ -1,8 +1,9 @@
 #!MARDS_schema_en_1.0 maker_redux_recipe_0.2
-    title "Maker Redux Recipe Format v1.0"
-    import workstep_grammer_doc
+    describe en
+        title "Maker Redux Recipe Format v1.0"
+    import workstep_grammer
         local
-    import part_grammer_doc
+    import part_grammer
         local
 
 ## #########################
@@ -77,7 +78,7 @@ name parameter
     name description
         treatment sum
     name type
-        treatement one
+        treatment one
         required
         value
             type label
@@ -159,14 +160,14 @@ name workstep
             required
             type duration
             default "0s"
-    name industry   
+    name industry
     ## was formerly called 'station'
         treatment one
         required
         value
             type label
             required
-    name function   
+    name function
     ## was formerly called 'command'
         treatment one
         required
@@ -228,7 +229,7 @@ name part
                 min 1
             required
             default 1
-    name category
+    name label
         required
         value
             type label

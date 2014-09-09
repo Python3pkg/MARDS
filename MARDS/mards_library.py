@@ -2,6 +2,52 @@
 #
 # INTERNAL SUPPORT ROUTINES
 #
+
+from rolne import rolne
+
+def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False, key_open=False, prefix=""):
+    result = rolne()
+    error_list = []
+    if doc is None:
+        return result, error_list
+    if schema:
+        schema, schema_errors = _SCHEMA_to_rolne(schema)
+        error_list.extend(schema_errors)
+    current = 0
+    tab_list = [0]
+    pointer_list = range(50)
+    pointer_list[0]=result
+    last_spot = pointer_list[0]
+    #line_tracker = []
+    last_nvi = range(50)
+    for ctr, line in enumerate(doc.split("\n")):
+        #line_tracker.append([])
+        (indent, key, value, error) = parse_line(line, tab_list, tab_strict=tab_strict, key_open=key_open)
+        if error:
+            t = (context, ctr, error)
+            error_list.append(t)
+        else:
+            if key:
+                if indent<current:
+                    current = indent
+                elif indent==current:
+                    pass # do nothing, the operational default works
+                elif indent==(current+1):
+                    pointer_list[indent] = last_spot
+                    current = indent
+                else:
+                    t = (context, ctr, "tab stop jumped ahead too far")
+                    error_list.append(t)
+                index = pointer_list[indent].append_index(key, value, seq=prefix+str(ctr))
+                last_spot = pointer_list[indent][key, value, index]
+                last_nvi[indent]=(key, value, index)
+                #for r in range(indent+1):
+                #    line_tracker[ctr].append(last_nvi[r])
+    if schema:
+        result, schema_errors = schema_rolne_check(result, schema)
+        error_list.extend(schema_errors)
+    return result, error_list
+
     
 def parse_line(line, tab_list, tab_strict=False, key_open=False):
     indent = None
@@ -9,6 +55,8 @@ def parse_line(line, tab_list, tab_strict=False, key_open=False):
     value = None
     error = None
     space_ctr = 0
+    if len(line.strip())==0: #skip completely whitespace lines
+        return (indent, key, value, error)
     # mode: 0=beginning, 1=key, 2=pre-value, 3=value
     mode = 0 # beginning
     for c in line:
@@ -41,9 +89,12 @@ def parse_line(line, tab_list, tab_strict=False, key_open=False):
             value += c
         else:
             raise
-    if value is not None and len(value.strip())>=2:
-        if value[0]=='"':
-            if value.rstrip()[-1]=='"':
+    if value is not None:
+        value = value.strip()
+        if len(value)>=2:
+            if value[0]==value[-1]=='"':
+                value=value.rstrip()[1:-1]
+            elif value[0]==value[-1]=="'":
                 value=value.rstrip()[1:-1]
     #
     # calculate indent
@@ -51,7 +102,8 @@ def parse_line(line, tab_list, tab_strict=False, key_open=False):
     if tab_strict:
         indent = int(space_ctr / 4)
         if space_ctr % 4 != 0:
-            return (indent, key, value, "indent found that is not a multiple of 4 spaces")
+            snap = line.strip()[:20]
+            return (indent, key, value, "indent found that is not a multiple of 4 spaces: '{}'".format(snap))
     else:
         indent = 0
         #print key, value, space_ctr, repr(tab_list)
@@ -199,7 +251,7 @@ def sub_schema_coverage(doc, schema):
     error_list = []
     for entry in doc.dump_list( (), name=True, value=True, index=True, seq=True):
         (name, value, index, seq) = entry
-        if not name in schema.get_list("name"):
+        if not name in schema.list_values("name"):
             error_list.append( ("doc", seq, "a name of '{}' not found in schema context".format(name)) )
         else:
             # check subs
@@ -209,7 +261,7 @@ def sub_schema_coverage(doc, schema):
 
 def sub_schema_treatments(doc, schema):
     error_list = []
-    for target in schema.get_list("name"):
+    for target in schema.list_values("name"):
         pointer = schema["name", target]
         treatment = pointer.value("treatment")
         if not treatment:
@@ -254,22 +306,22 @@ req_ctr = 0
 def sub_schema_requirements(doc, schema):
     global req_ctr
     error_list = []
-    for target in schema.get_list("name"):
+    for target in schema.list_values("name"):
         pointer = schema["name", target]
         # check for missing target
-        if pointer.get_list("required", None):
-            if doc.get_list(target):
+        if pointer.list_values("required", None):
+            if doc.list_values(target):
                 pass
             else:
-                if pointer.get_list("value", None):
+                if pointer.list_values("value", None):
                     doc.append(target, pointer["value", None].value("default"), seq='auto'+str(req_ctr))
                 else:
                     doc.append(target, None, seq="auto"+str(req_ctr))
                 req_ctr += 1
         # check 'value' (if exists)
-        if pointer.get_list("value", None):
+        if pointer.list_values("value", None):
             value_parms = pointer["value", None]
-            if value_parms.get_list("required", None):
+            if value_parms.list_values("required", None):
                 for name,value,index,seq in doc.dump_list((target), name=True, value=True, index=True, seq=True):
                     #key_list = [(name, value, index)]
                     #line_number = find_rolne_line(line_keys, key_list)
@@ -304,11 +356,11 @@ def sub_convert_python(doc, schema):
             value_ordered_flag = False
         else:
             value_ordered_flag = True
-        if schema["name", en].get_list("name"):
+        if schema["name", en].list_values("name"):
             has_subs = True
         else:
             has_subs = False
-        name_count = len(doc.get_list(en))
+        name_count = len(doc.list_values(en))
         sub_list = sub_convert_python(doc[en, ev, ei], schema["name", en])
         # create an item for the structure
         if name_ordered_flag:
@@ -405,4 +457,226 @@ def type_aware_sum_value(item_a, item_b, item_type=None):
             result = str(item_a)+str(item_b)
     return result
 
+def _SCHEMA_to_rolne(doc=None, prefix=""):
+    ################################
+    # CONVERT TO A ROLNE
+    ################################
+    schema, error_list = MARDS_to_rolne(doc, context="schema", tab_strict=True, key_open=True, prefix=prefix)
+    ################################
+    #  FIRST PASS SYNTAX CHECKING
+    #
+    # build a list of names from the document and their corresponding locations
+    # mark as False if the key is seen twice
+    # also do basic syntax checking
+    ################################
+    for key in schema.flattened_list( (), name=True, value=True, seq=True):
+        (en, ev, es) = key
+        if en in ["name", "template"]:
+            pass
+        elif en in ["#!MARDS_schema_en_1.0", "import", "local"]:
+            pass
+        elif en in ["##"]:
+            schema.seq_delete(es)
+        elif en in ["limit"]:
+            # TODO: check that parent is 'recurse'
+            parent_es = schema.seq_parent(es)
+            if schema.at_seq(parent_es).name()!='recurse':
+                error_list.append( ("schema", es, "the 'limit' element may only be applied to a 'recurse'") )
+                schema.seq_delete(es)
+            else:
+                if ev.isdigit():
+                    if int(ev)<1 or int(ev)>20:
+                        error_list.append( ("schema", es, "the 'limit' should have a integer value between 1 and 20") )
+                        schema.seq_delete(es)
+                else:
+                    error_list.append( ("schema", es, "the 'limit' should have a integer value between 1 and 20") )
+                    schema.seq_delete(es)
+        elif en in ["treatment", "value", "required", "default", "ordered"]:
+            pass
+        elif en in ["insert", "recurse", "extend", "from"]:
+            pass
+        elif en in ["describe", "title", "abstract", "body", "reference", "author", 'title', 'url', 'journal', 'book', 'date_written', 'date_retreived', 'pages', 'paragraphs', 'copyright_message', 'publisher']:
+            pass
+        elif en in ["match", "search"]:
+            pass
+        elif en in ["type", "choice", "search", "min"]:  ## TODO: Type stuff
+            pass
+        else:
+            t = ("schema", es, "'{}' not a recognized schema element name".format(en))
+            error_list.append(t)
+            schema.seq_delete(es)
+    #################################
+    #
+    # IMPLEMENT Header and imports
+    #
+    #################################
+    schema_list = schema.flattened_list(("#!MARDS_schema_en_1.0"), value=True, seq=True)
+    for (ev, es) in schema_list:
+        header = schema.at_seq(es)
+        import_list = header.flattened_list(("import"), value=True, seq=True)
+        for (iev, ies) in import_list:
+            i = header.at_seq(ies)
+            if iev:
+                prx = iev+"/"
+            else:
+                prx = "./"
+            if i.name("local"):
+                file_loc = i.value("local")
+                if file_loc is None:
+                    file_loc = iev+".MARDS-schema"
+                try:
+                    with open(file_loc, 'r') as file:
+                        subdata = file.read()
+                except IOError, e: 
+                    error_list.append ( ("schema", ies, str(e)) )
+                    subdata = None
+                if subdata:
+                    sr,e = _SCHEMA_to_rolne(subdata, prefix=prx)
+                    schema.extend(sr)  #TODO: 'prepend' rather than 'extend'?
+                    # TODO: convince rolne to retain line numbering in sr
+                    error_list.extend(e)
+            else:
+                error_list.append( ("schema", ies, "unable to locate import for '{}'".format(iev)) )
+        schema.seq_delete(es)  #TODO: verify rolne .seq_delete also deletes children
+    #################################
+    #
+    # MAKE A COPY AND BUILD INDEX
+    #
+    # copy used by other functions for internal insertions, etc.
+    #################################
+    copy = schema.copy(seq_prefix="", seq_suffix="")
+    name_seq = {}
+    name_recurs = {}
+    for key in schema.flattened_list( (), name=True, value=True, seq=True):
+        (en, ev, es) = key
+        if en in ["name", "template"]:
+            if ev in name_seq:
+                name_seq[ev]=False
+            else:
+                name_seq[ev]=es
+    #################################
+    # IMPLEMENT 'template'
+    #
+    # This is done oddly: now that 'copy' has been made, we simply
+    # delete the templates from the  active rolne and rename 'template' to
+    # 'name' in the copy.
+    #################################
+
+    schema_list = schema.flattened_list(("template"), value=True, seq=True)
+    for (ev, es) in schema_list:
+        if not prefix:
+            schema.seq_delete(es)
+        copy.at_seq(es).set_name("name")
+    #print "jschema",prefix,schema
+    #print "jcopy",copy
+    #################################
+    #
+    # IMPLEMENT 'insert'
+    #
+    #################################
+    schema_list = schema.flattened_list(("insert"), value=True, seq=True)
+    safety_ctr=0
+    while schema_list and safety_ctr<20:
+        for (ev, es) in schema_list:
+            if ev in name_seq:
+                if name_seq[ev] is False:
+                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
+                    error_list.append(t)
+                    schema.seq_delete(es)
+                else:
+                    src = name_seq[ev]
+                    depth_desired = 1
+                    line = schema.seq_lineage(es)
+                    new_depth = len(line) 
+                    prx = src+".i"+str(new_depth)+"."
+                    if name_seq[ev] in line:
+                        error_list.append(("schema", es, "'insert {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
+                        schema.seq_delete(es)
+                    else:
+                        schema.seq_replace(es, copy.ptr_to_seq(src), prx)
+            else:
+                t = ("schema", es, "'name {}' not found in schema".format(ev))
+                error_list.append(t)
+                schema.seq_delete(es)
+        schema_list = schema.flattened_list(("insert"), value=True, seq=True)
+        safety_ctr += 1
+    #################################
+    #
+    # IMPLEMENT 'extend'
+    #
+    #################################
+    schema_list = schema.flattened_list(("extend"), value=True, seq=True)
+    safety_ctr=0
+    while schema_list and safety_ctr<20:
+        for (ev, es) in schema_list:
+            if ev in name_seq:
+                if name_seq[ev] is False:
+                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
+                    error_list.append(t)
+                    schema.seq_delete(es)
+                else:
+                    src = name_seq[ev]
+                    depth_desired = 1
+                    line = schema.seq_lineage(es)
+                    new_depth = len(line) 
+                    prx = src+".e"+str(new_depth)+"."
+                    if name_seq[ev] in line:
+                        error_list.append(("schema", es, "'extend {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
+                        schema.seq_delete(es)
+                    else:
+                        parent = schema.at_seq(schema.seq_parent(es))
+                        children = copy.at_seq(src)
+                        parent.extend(children, prefix=prx)
+                        schema.seq_delete(es)
+            else:
+                t = ("schema", es, "'name {}' not found in schema".format(ev))
+                error_list.append(t)
+                schema.seq_delete(es)
+        schema_list = schema.flattened_list(("extend"), value=True, seq=True)
+        safety_ctr += 1
+    #################################
+    #
+    # IMPLEMENT 'resurse' recursion
+    #
+    #################################
+    schema_list = schema.flattened_list(("recurse"), value=True, seq=True)
+    safety_ctr=0
+    while schema_list and safety_ctr<20:
+        for (ev, es) in schema_list:
+            if ev in name_seq:
+                if name_seq[ev] is False:
+                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
+                    error_list.append(t)
+                    schema.seq_delete(es)
+                else:
+                    src = name_seq[ev]
+                    depth_desired = schema.at_seq(es).value("limit")
+                    if depth_desired is None:
+                        depth_desired = 2
+                    else:
+                        depth_desired = int(depth_desired)
+                    line = schema.seq_lineage(es)
+                    new_depth = len(line)-1 
+                    prx = src+".r"+str(new_depth)+"."
+                    if name_seq[ev] in line:
+                        if new_depth<=depth_desired:
+                            schema.seq_replace(es, copy.ptr_to_seq(src), prx)
+                        else:
+                            schema.seq_delete(es)
+                    else:
+                        error_list.append(("schema", es, "'recurse {}' is not recursive".format(ev)))
+                        schema.seq_delete(es)
+            else:
+                t = ("schema", es, "'name {}' not found in schema".format(ev))
+                error_list.append(t)
+                schema.seq_delete(es)
+        schema_list = schema.flattened_list(("recurse"), value=True, seq=True)
+        safety_ctr += 1
+    ########################
+    #   DONE
+    ########################
+    return schema, error_list
+
+    
+    
 # eof: MARDS\mards_library.py

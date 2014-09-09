@@ -1,0 +1,170 @@
+#!MARDS_schema_en_1.0 part_grammer_0.2
+    describe en
+        title "Grammer for Parts"
+
+template parts_grammer
+    search label
+        match 'lumber'
+            extend lumber
+        match 'wood_panel' 
+            extend wood_panel
+        match 'from_distributor'
+            extend from_distributor
+        match 'open'
+            extend open
+
+template lumber
+    name thickness
+        value
+            required
+            type choice
+                choice "1/4"
+                choice "1/2"
+                choice "3/4"
+                choice "4/4"
+                choice "5/4"
+                choice "6/4"
+                choice "8/4"
+                choice "10/4"
+                choice "12/4"
+        describe en
+            title "nominal thickness of raw stock"
+    name minimum_width
+        value
+            required
+            type length
+    name board_feet_at_minimum
+        value
+            required
+            type length
+    name species
+        value
+            required
+            type choice
+                choice oak
+                choice pine
+                choice walnut
+                choice bubinga
+                choice cypress
+                choice fir
+                choice hemlock
+                choice maple
+                choice cedar
+                choice spruce
+                choice ash
+                choice padauk
+                choice birch
+                choice chestnut
+                choice cherry
+                choice ebony
+                choice mahongony
+                choice poplar
+                choice bamboo
+    name surface_finish
+        value
+            required
+            type choice
+            choice rough
+            choice S1S
+            choice S2S
+            choice S3S
+            choice S4S 
+        
+template wood_panel
+    describe en 
+        title "Flat stock lumber (Plywood, MDF, particle board, etc)"
+    name top_surface
+        value
+            required
+            type choice
+                choice oak
+                choice pine
+                choice walnut
+                choice bubinga
+                choice cypress
+                choice fir
+                choice hemlock
+                choice maple
+                choice cedar
+                choice spruce
+                choice ash
+                choice padauk
+                choice birch
+                choice chestnut
+                choice cherry
+                choice ebony
+                choice mahongony
+                choice poplar
+                choice bamboo
+
+    name bottom_surface
+        value
+            type choice
+                choice oak
+                choice pine
+                choice walnut
+                choice bubinga
+                choice cypress
+                choice fir
+                choice hemlock
+                choice maple
+                choice cedar
+                choice spruce
+                choice ash
+                choice padauk
+                choice birch
+                choice chestnut
+                choice cherry
+                choice ebony
+                choice mahongony
+                choice poplar
+                choice bamboo
+    name top_quality
+        value
+            required
+            type choice
+                choice fine
+                choice medium
+                choice course
+    name bottom_quality
+        value
+            type choice
+                choice fine
+                choice medium
+                choice course
+    name width
+        value
+            type length
+
+    name length
+        value
+            type length
+    name thickness
+        value
+            required
+            type length
+    name core
+        value
+            required
+            type choice
+                choice MDF
+                choice layer
+
+template from_distributor
+    describe en 
+        title "Part ordered from a vendor with no additional processing required"
+    name part_number
+        required
+        value
+            type string
+    name distributer
+        required
+        value
+            type string
+    name part_url
+        value
+            type string
+
+template open
+    describe en 
+        title "this page intentionally left blank"

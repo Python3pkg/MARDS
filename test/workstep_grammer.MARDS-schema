@@ -1,0 +1,146 @@
+#!MARDS_schema_en_1.0 workstep_grammer_0.2
+    describe en
+        title "Grammer for Worksteps"
+
+template workstep_grammer
+    search industry
+        match 'woodworking'
+            search function
+                match 'cut_board'
+                    extend woodworking.cut_board
+                match 'small_carve'
+                    extend woodworking.small_carve
+                match 'cut_panel'
+                    extend woodworking.cut_panel
+                match 'cnc_panel'
+                    extend woodworking.cnc_panel
+                match 'glue_assembly'
+                    extend woodworking.glue_assembly
+                match 'sand_part'
+                    extend woodworking.sand_part
+                match 'surface_finish'
+                    extend woodworking.surface_finish
+        match 'metalcraft'
+            search function
+                match 'small_mill'
+                    ## extend metalcraft.small_mill
+                match 'welding'
+                    ## extend metalcraft.welding
+        match 'assembly'
+            search function
+                match 'workbench'
+                    extend assembly.workbench
+
+        match 'additive_manufacturing'
+            search function
+                match 'fdm_printer'
+                    ## extend additive_manufacturing.fdm_printer'
+        match 'laser_cutting'
+            search function
+                match 'vector_cut'
+                    extend laser_cutting.vector_cut
+        match 'printing'
+            search function
+                match 'bw_laser_print'
+                    extend printing.bw_laser_print
+
+
+template woodworking.cut_board
+    describe en 
+        title "cut a board to specified dimensions"
+    name length
+        value
+            required
+            type length
+        describe en
+            title "length of the board in axis of primary grain"
+    name width
+        value
+            required
+            type length
+
+template woodworking.small_carve
+    describe en 
+        title "CNC surfacing of 3D model"   
+        name part_file
+        value
+            required
+            type file
+
+template woodworking.cut_panel
+    describe en 
+        title "cut parts from panel flatstock"   
+        name length
+        value
+            required
+            type length
+    name width
+        value
+            required
+            type length
+
+template woodworking.cnc_panel
+    describe en 
+        title "CNC cut parts from panel flatstock"  
+    name part_file
+        value
+            required
+            type file
+
+template woodworking.glue_assembly
+    describe en 
+        title "assemble parts with adhesive and timed curing"     
+    name adhesive
+        value
+            type string
+    name dry_time
+        value
+            type duration
+
+template woodworking.sand_part
+    name abrasive
+        value
+            required
+            type string
+
+template woodworking.surface_finish
+    describe en 
+        title "apply surface finish and timed drying"     
+    name finishing_agent
+        value
+            required
+            type string
+    name dry_time
+        value
+            required
+            type duration
+
+template assembly.workbench
+    describe en
+        title "assemble parts into higher level assembly"
+
+template laser_cutting.vector_cut
+    describe en 
+        title "laser cut part(s) from flatstock"   
+        name part_file
+        value
+            required
+            type file
+        name reference_file
+        value
+            type file
+            describe en
+                title "configuration parameters for the laser"
+ 
+template printing.bw_laser_print
+    describe en 
+        title "print black/white on paper"   
+        name print_file
+        value
+            required
+            type file
+        name paper
+        value
+            type string
+            describe en
+                title "description of paper to use"   
