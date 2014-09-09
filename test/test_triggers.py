@@ -15,7 +15,7 @@ blink zippy
 item "broom"
     size 33
     color blue
-    blueness 56%
+    blueness    
 item "brush"
     size 2
 '''
@@ -44,7 +44,11 @@ name item
             default "unknown"
     search color
         match 'blue'
-            name blueness
+            search size
+                match 33
+                    name blueness
+                        value
+                            required
         match 'yellow'
             name yellowness
 

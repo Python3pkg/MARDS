@@ -230,7 +230,7 @@ def schema_rolne_check(doc, schema):
     # this pass verifies that each entry in the document
     # has a corresponding entry in the schema
     #
-    el = sub_schema_coverage(doc, schema)
+    el = check_schema_coverage(doc, schema)
     error_list.extend(el)
     #
     # PASS TWO: REQUIREMENTS CHECK OF SCHEMA
@@ -247,19 +247,47 @@ def schema_rolne_check(doc, schema):
     error_list.extend(el)
     return doc, error_list
 
-def sub_schema_coverage(doc, schema):
+def check_schema_coverage(doc, schema):
+    '''
+    FORWARD CHECK OF DOCUMENT
+    
+    This routine looks at each element in the doc, and makes sure there
+    is a matching 'name' in the schema at that level.
+    '''
     error_list = []
     for entry in doc.dump_list( (), name=True, value=True, index=True, seq=True):
         (name, value, index, seq) = entry
-        if not name in schema.list_values("name"):
-            error_list.append( ("doc", seq, "a name of '{}' not found in schema context".format(name)) )
+        temp_schema = schema_match_up(doc, schema)
+        if not name in temp_schema.list_values("name"):
+            error_list.append( ("doc", seq, "a name of '{}' not found in schema".format(name)) )
         else:
             # check subs
-            el = sub_schema_coverage(doc[name, value, index], schema["name", name])
+            el = check_schema_coverage(doc[name, value, index], temp_schema["name", name])
             error_list.extend(el)
     return error_list
 
-def sub_schema_treatments(doc, schema):
+def schema_match_up(doc, schema):
+    '''
+    SCHEMA mini-recompile for SEARCH and MATCH functions
+    
+    given the doc, it returns a schema copy that implements the match
+    '''
+    search_list = schema.list_values("search")  #TODO have earlier scan remove duplicate searches (e.g. 'search color' and 'search color' in same layer/context)
+    if search_list:
+        copy = schema.copy(seq_prefix="match_", seq_suffix="")
+        for target_name in search_list:
+            target_value = doc.value(target_name)
+            if target_value:
+                match_list = copy["search", target_name].list_values("match")
+                if target_value in match_list:
+                    copy.extend(copy["search", target_name]["match", target_value])
+                    del copy["search", target_name]
+                    copy = schema_match_up(doc, copy)
+        return copy
+    return schema
+    
+def sub_schema_treatments(doc, orig_schema):
+    schema = schema_match_up(doc, orig_schema)
     error_list = []
     for target in schema.list_values("name"):
         pointer = schema["name", target]
@@ -303,7 +331,8 @@ def sub_schema_treatments(doc, schema):
 
 req_ctr = 0
 
-def sub_schema_requirements(doc, schema):
+def sub_schema_requirements(doc, orig_schema):
+    schema = schema_match_up(doc, orig_schema)
     global req_ctr
     error_list = []
     for target in schema.list_values("name"):

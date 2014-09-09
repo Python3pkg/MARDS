@@ -15,8 +15,8 @@ with open("Bling.MARDS", 'r') as docfile:
 with open("mr recipe.MARDS-schema", 'r') as schemafile:
     schema = schemafile.read()
 
-x,e = MARDS.ml._SCHEMA_to_rolne(schema)
-#x,e = MARDS.string_to_rolne(doc, schema)
+#x,e = MARDS.ml._SCHEMA_to_rolne(schema)
+x,e = MARDS.string_to_rolne(doc, schema)
 print "FINAL:\n"
 print x._explicit()
 print "ERRORS:\n"
