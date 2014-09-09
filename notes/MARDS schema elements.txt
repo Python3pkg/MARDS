@@ -1212,7 +1212,7 @@ An example:
                 title "de Finibus Bonorum et Malorum"
                 date_written "circa 45 BCE"
                 date_retreived 2014-09-04
-                paragraph "Section 1.10.32"
+                paragraphs "Section 1.10.32"
     
 ----------------------
 Markdown Extension

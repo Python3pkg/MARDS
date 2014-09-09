@@ -39,6 +39,19 @@ name zoom_flag
         required
         default True
     name color
+    describe en
+        title "The Zoom Flag"
+        abstract "A means of establishing the state of zoom. Set to True to zoon, but set to False if not."
+        body "Lorem ipsum dolor sit amet, consectetur adipiscing elit,"
+        body "sed do eiusmod tempor incididunt ut labore et dolore"
+        reference old_latin
+            author Cicero
+            title "de Finibus Bonorum et Malorum"
+            date_written "circa 45 BCE"
+            date_retreived 2014-09-04
+            paragraphs "Section 1.10.32"
+
+
 name boing
     required
     value

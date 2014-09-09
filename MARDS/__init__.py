@@ -88,6 +88,8 @@ def _SCHEMA_to_rolne(doc=None, prefix=""):
                     schema.seq_delete(es)
         elif en in ["treatment", "value", "insert", "required", "default", "ordered", "type", "recurse", "extend"]:
             pass
+        elif en in ["describe", "title", "abstract", "body", "reference", "author", 'title', 'url', 'journal', 'book', 'date_written', 'date_retreived', 'pages', 'paragraphs', 'copyright_message', 'publisher']:
+            pass
         else:
             t = ("schema", es, "'{}' not a recognized schema element name".format(en))
             error_list.append(t)
@@ -112,7 +114,6 @@ def _SCHEMA_to_rolne(doc=None, prefix=""):
                 with open(file_loc, 'r') as file:
                     subdata = file.read()
                     sr,e = _SCHEMA_to_rolne(subdata, prefix=prx)
-                    # print "jjj", sr._explicit()
                     schema.extend(sr)  #TODO: 'prepend' rather than 'extend'?
                     # TODO: convince rolne to retain line numbering in sr
                     error_list.extend(e)
