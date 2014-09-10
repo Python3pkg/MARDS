@@ -5,6 +5,82 @@
 
 from rolne import rolne
 
+
+standard_types = '''\
+#!MARDS_schema_en_1.0
+
+define_type length
+    describe en
+        body "The extent of something from end to end. Normalized to SI unit of meter (m)"
+define_type price
+    name currency
+        value
+            required
+    describe en
+        body "The proposed quantity of money or other compensation in exchange for a good or service. The normalization depends on the currency."
+define_type qty
+    describe en
+        body "A positive integer representing the amount of discrete objects, items, or services contained, needed, or desired. The number range is from 0 to 9223372036854775807. Normalized to a series of decimal digits with no seperators."
+define_type percent
+    describe en
+        body "A fraction of unity. Normalized to a simple decimal fraction. So, nothing is '0.0' and all is '1.0'. Can alternatively represented by the '%' symbol, such as '0%' and '100.0%'. A percentage cannot be below zero, but it has no upper limit."
+define_type string
+    describe en
+        body "A string is any sequence of UTF8 characters."
+define_type ignore
+    describe en
+        body "A value with an 'ignore' type is discarded. Normalized to an empty string."
+define_type distance
+    describe en
+        body "A positive numeric measure of the how far apart two objects are. Normalized to the SI unit of meter (m). If the value is found to be negative, it is made positive."
+define_type units
+    describe en
+        body "A short sequence of characters indicating a desired or required unit of measurement. It is treated just like a 'string' type."
+define_type degree
+    unit "° deg"
+    unit "rad radian"
+    unit "mil"
+    unit "grad gon"
+    unit "turn"
+    describe en
+        body "A unit of angle measurement. It is normalized to simple radians."
+define_type file
+    describe en
+        body "A name of a file on an storage system."
+define_type duration
+    describe en
+        body "A positive measure of time between two events. Normalized to SI unit of seconds (s)."
+define_type mass
+    describe en
+        body "A positive measure of the physical property of a bodies resistence to accelleration by force. At rest on a planet, weight and mass are commonly the same thing. Normalized to the SI unit of kilograme (kg)."
+define_type temperature
+    describe en
+        body "A measure of hot and cold. Normalized to the SI unit of the Kelvin (K)".
+define_type luminous_intensity
+    describe en
+        body "A measure of the vavelength-weighted power emitted by a light source in a particular direction per unit solid angle (see wikipedia). Normalized to the SI unit of candela (cd)."
+define_type current
+    describe en
+        body "The flow of electric charge. Normalized to the SI unit of ampere (A)."
+define_type voltage
+    describe en
+        body "The potential of electric force. Normalized to the SI unit of volt (V)."
+define_type frequency
+    describe en
+        body "The count of events per unit of time. Normalized to the SI unit of hertz (Hz).
+define_type boolean
+    describe en
+        body "The state of either Truth (existence) or False (non-existence). Normalized to the interpretation of '1' for true and '0' for false."
+define_type integer
+    describe en
+        body "A non-fractional signed number with a range of –9223372036854775808 to 9223372036854775807. Normalized to a series of decimal digits with no seperators. It is prefixed with minus (-) if the number is negative. Otherwise, there is no prefix."
+define_type float
+    describe en
+        body "A real number in specified by IEEE 754. It is normalized to standard scientific notation. For example, 1.234x10^2 is the equivalent of 123.4"
+
+'''
+
+
 def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False, key_open=False, prefix=""):
     result = rolne()
     error_list = []

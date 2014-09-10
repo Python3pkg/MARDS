@@ -24,8 +24,9 @@ item "brush"
 
 schema = '''
 #!MARDS_schema_en_1.0 blah
-    import sub
-        local "sub.MARDS-schema"
+
+##    import sub
+##        local "sub.MARDS-schema"
 
 name blink
     value
@@ -52,7 +53,6 @@ name item
         treatment concat
         value
             default "unknown"
-        extend xx
 '''
 
 # x,e = MARDS._SCHEMA_to_rolne(schema)
