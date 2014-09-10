@@ -1,0 +1,87 @@
+recipe "Stencilizer"
+id "53bdbb8af02d5e000ffddbc3"
+parameter stencilfile_layer1
+    __origin_id 53bdbd2d48b63d5963000000
+    version 0.1 mr
+    type file
+parameter stencilfile_layer2
+    __origin_id 53d3c103fe5c7c01e4000000
+    version 0.1 mr
+    type file
+parameter stencilfile_layer3
+    __origin_id 53d3c105fe5c7c01e4000001
+    version 0.1 mr
+    type file
+parameter stencilfile_layer4
+    __origin_id 53d3c109fe5c7c01e4000002
+    version 0.1 mr
+    type file
+parameter stencil_sample
+    __origin_id 53cfd1e248b63d654b000000
+    version 0.1 mr
+    type file
+    description "The stencil sample PDF file"
+maker laser_cutter_guy
+    __origin_id 53bdbb9f48b63d0796000000
+    version 0.1 mr
+    company_name "Wetpaint Designs LLC (Corporation)"
+    company_id 526ae7db020e603fb3fc4181
+workstep print
+    __origin_id 53bf0a4a9381896708000000
+    version 0.1 mr
+    industry printing
+    function bw_laser_print
+    maker laser_cutter_guy
+    typical_cost $1.00
+    print_file {stencil_sample}
+    output sample_sheet
+workstep cut_layer_1
+    __origin_id 53bdbb8af02d5e000ffddbc8
+    version 0.1 mr
+    industry laser_cutting
+    function vector_cut
+    part_file {stencilfile_layer1}
+    maker laser_cutter_guy
+    typical_cost $6.50
+    output layer_1_sheet
+workstep cut_layer_2
+    __origin_id 53d3c064fe5c7c29a7000001
+    version 0.1 mr
+    industry laser_cutting
+    function vector_cut
+    part_file {stencilfile_layer2}
+    maker laser_cutter_guy
+    typical_cost $6.50
+    output layer_2_sheet
+workstep cut_layer_3
+    __origin_id 53d3c05efe5c7c29a7000000
+    version 0.1 mr
+    industry laser_cutting
+    function vector_cut
+    part_file {stencilfile_layer3}
+    maker laser_cutter_guy
+    typical_cost $6.50
+    output layer_3_sheet
+workstep cut_layer_4
+    __origin_id 53d3c00cfe5c7c67bd000000
+    version 0.1 mr
+    industry laser_cutting
+    function vector_cut
+    part_file {stencilfile_layer4}
+    maker laser_cutter_guy
+    typical_cost $6.50
+    output layer_4_sheet
+workstep assemble_stencil_pack
+    __origin_id 53bf0ac193818977f8000000
+    version 0.1 mr
+    industry assembly
+    function workbench
+    maker laser_cutter_guy
+    typical_cost $0.50
+    input layer_1_sheet
+    input layer_2_sheet
+    input layer_3_sheet
+    input layer_4_sheet
+    input sample_sheet
+    output stencil_kit 
+        final

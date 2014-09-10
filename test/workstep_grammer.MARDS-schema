@@ -62,7 +62,7 @@ template woodworking.cut_board
 template woodworking.small_carve
     describe en 
         title "CNC surfacing of 3D model"   
-        name part_file
+    name part_file
         value
             required
             type file
@@ -70,7 +70,7 @@ template woodworking.small_carve
 template woodworking.cut_panel
     describe en 
         title "cut parts from panel flatstock"   
-        name length
+    name length
         value
             required
             type length
@@ -122,11 +122,11 @@ template assembly.workbench
 template laser_cutting.vector_cut
     describe en 
         title "laser cut part(s) from flatstock"   
-        name part_file
+    name part_file
         value
             required
             type file
-        name reference_file
+    name reference_file
         value
             type file
             describe en
@@ -135,11 +135,11 @@ template laser_cutting.vector_cut
 template printing.bw_laser_print
     describe en 
         title "print black/white on paper"   
-        name print_file
+    name print_file
         value
             required
             type file
-        name paper
+    name paper
         value
             type string
             describe en
