@@ -157,7 +157,7 @@ template from_distributor
         required
         value
             type string
-    name distributer
+    name distributor
         required
         value
             type string
