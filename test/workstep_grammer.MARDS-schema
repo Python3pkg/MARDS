@@ -8,7 +8,7 @@ template workstep_grammer
             search function
                 match 'cut_board'
                     extend woodworking.cut_board
-                match 'small_carve'
+                match 'cnc_part'
                     extend woodworking.small_carve
                 match 'cut_panel'
                     extend woodworking.cut_panel
@@ -39,6 +39,8 @@ template workstep_grammer
             search function
                 match 'vector_cut'
                     extend laser_cutting.vector_cut
+                match 'vector_engrave'
+                    extend laser_cutting.vector_engrave
         match 'printing'
             search function
                 match 'bw_laser_print'
@@ -132,6 +134,19 @@ template laser_cutting.vector_cut
             describe en
                 title "configuration parameters for the laser"
  
+template laser_cutting.vector_engrave
+    describe en 
+        title "laser engrave part(s)"   
+    name part_file
+        value
+            required
+            type file
+    name reference_file
+        value
+            type file
+            describe en
+                title "configuration parameters for the laser"
+
 template printing.bw_laser_print
     describe en 
         title "print black/white on paper"   

@@ -125,6 +125,7 @@ name workstep
         value
             type currency
             required
+            default 0
     name input
         value
             type label
@@ -160,6 +161,11 @@ name workstep
             required
             type duration
             default "0s"
+    name repeat
+        treatment one
+        value
+            required
+            type qty
     name industry
     ## was formerly called 'station'
         treatment one
@@ -211,6 +217,7 @@ name part
         value
             type currency
             required
+            default 0
     name sku_source
         treatment one
         value
