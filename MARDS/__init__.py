@@ -6,6 +6,7 @@
 
 from rolne import rolne
 
+import standard_types as st
 import mards_library as ml
 
 def string_to_rolne(string=None, schema=None):

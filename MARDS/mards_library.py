@@ -5,458 +5,7 @@
 #
 
 from rolne import rolne
-
-
-standard_types = '''\
-#!MARDS_schema_en_1.0
-
-define_type string
-    describe en
-        title "String (UTF8)"
-        body "A string is any sequence of UTF8 characters. This is the default type if no other type is specified."
-
-define_type label
-    describe en
-        title "Label"
-        body "A UTF8 unicode string containing alphabetic characters, digits 0 to 9, underscores (\_), and periods. No other characters are permitted. Labels are generally case-sensitive."
-        body ""
-        body "Very explicitly: whitespace characters are forbidden (such as SPACE and TAB). Punctuation of any kind (other than underscores and periods) are forbidden."
-        body ""
-        body "The MARDS spec uses label rules for names in the name<space>value. However, it purposefully makes exception for labels that start with # symbol for outside-context exceptions such as for comments."
-        body ""
-        body "#Convention"
-        body ""
-        body "A label that follows the rules is ultimates a true label. However, there are conventions used in the making of the labels in English. Following these conventions makes the human interpretation of the labels much easier. They are as follows:"
-        body ""
-        body " *  Seperate words with underscores. Don't use CamelCase. So, instead of:"
-        body ""
-        body "    `OneTwoThree`"
-        body ""
-        body "    use:"
-        body ""
-        body "    `one_two_three`"
-        body ""
-        body " *  use all lower case letters unless called for by standard writing convention. A label is not assumed to be a sentence, so the first word should not be capitalized unless called for by other convention rules. So, instead of:"
-        body ""
-        body "    `Qty_Of_Johns_Boxes`"
-        body ""
-        body "    use:"
-        body ""
-        body "    `qty_of_Johns_boxes`"
-        body ""
-        body "    Notice that 'J' remains capitalized since 'John' is a persons name and would be capitalized by English writing convention."
-        body ""
-        body " *  Punctuation is 'skipped' rather than given an underscore unless such an underscore greatly adds clarity. So, instead of:"
-        body ""
-        body "    `qty_of_John_s_boxes`"
-        body ""
-        body "    use:"
-        body ""
-        body "    `qty_of_Johns_boxes`"
-        body ""
-        body " *  if the label is a schema name, imply the type of unit expected IF it aids clarity. Ideally it would be a suffix with the full type label. So, instead of:"
-        body ""
-        body "    `part4_twist`"
-        body ""
-        body "    use:"
-        body ""
-        body "    `part4_twist_percent`"
-        body ""
-        body " *  avoid the use of periods (.) for simple labels. The periods are meant to imply sectional seperation. TODO: expand this."
-        body " *  reserve labels that start with an underscore for information that should be repressed from publication or normal/typical view. A single underscore implies mild suppression. A double underscore implies strong supression. The actual meaning of 'suppression' is a matter of context."
-        body " *  Don't end a label with underscores or periods."
-
-define_type price
-    describe en
-        title "Price"
-        body "The proposed quantity of money or other compensation in exchange for a good or service. The normalization depends on the currency."
-    unit USD
-        describe en
-            title "U.S. Dollars"
-            body "A quantity of US Dollars. Precision is assumed to be to 6 decimal places. That is to say that $43.1234567 would be rounded to `43.123457 USD`. Regardless of the number, at least two decimal places are displayed. For example, $100 would normalize to `100.00 USD` but $100.932 would normalize to `100.932 USD`. But, again, the precision is to 6 decimal places regardless of display. So, $100.000000 is the same as $100. And, $100.932 is the same as $100.932000.
-        default
-        * "usd"
-        * "us"
-        * "dollars"
-        prefix "$"
-    unit USD-cents
-        * "c"
-        * "cents"
-        * "pennies"
-        * "¢"
-
-define_type qty
-    describe en
-        title "Quantity"
-        body "A positive integer representing the amount of discrete objects, items, or services contained, needed, or desired. The number range is from 0 to 9223372036854775807. Normalized to a series of decimal digits with no seperators."
-
-define_type percent
-    describe en
-        title "Percentage"
-        body "A fraction of unity. Normalized to a simple decimal fraction. So, nothing is '0.0' and all is '1.0'. Can alternatively represented by the '%' symbol, such as '0%' and '100.0%'. A percentage cannot be below zero, but it has no upper limit."
-    unit fraction
-        default
-    unit percent
-        * "%"
-
-define_type check_list
-    describe en
-        title "Choice/Check List"
-        body "A list of labels. Each label is restricted to the 'choice' elements under the 'type check_list' definition."
-        body ""
-        body "Each label is seperated by whitespace and/or other non-label characters."
-        body ""
-        body "A common convention is to use commas to visually aid in the seperation. This is not strictly required however. So, a value of `one, two, three` is the same as `one two three`. The single COMMA SPACE seperation is the normalized result."
-        body ""
-        body "If the schema defines the value as _required_, then the there must be at least one label selected. Otherwise, zero labels can be selected."
-    name choice
-        treatment unique
-        value
-            required
-            type label
-
-define_type radio_select
-    describe en
-        title "Radio Select"
-        body "A selected label. The label is restricted to the 'choice' elements under the 'type radio_select' definition."
-        body ""
-        body "If the schema defines the value as _required_, then the there must be a label selected. Otherwise, the value can be empty."
-    name choice
-        treatment unique
-        value
-            required
-            type label
-
-define_type ignore
-    describe en
-        title "Ignored Value"
-        body "A value with an 'ignore' type is discarded. Normalized to an empty string."
-
-define_type unit
-    describe en
-        title "Desired Unit"
-        body "A short sequence of characters indicating a desired or required unit of measurement. It is treated just like a 'string' type."
-
-define_type degree
-    describe en
-        body "A unit of angle measurement. It is normalized to simple radians."
-    unit deg
-        * "°"
-        * "deg"
-        * "degree"
-    unit rad
-        default
-        * "rad"
-        * "radian"
-
-define_type file
-    describe en
-        title "File Label"
-        body "A name of a file on an storage system. The name is expected to conform to a label. As such, there might be additional information added to make it a real file name when used by the local computer."
-
-define_type length
-    describe en
-        title "Length"
-        body "The extent of something from end to end. Normalized to SI unit of meter (m)"
-    unit m
-        default
-        * "m"
-        * "meter"
-        * "meters"
-        * "metre"
-        * "metres"
-    unit mm
-        * "mm"
-        * "millimeter"
-        * "millimeters"
-        * "millimetre"
-        * "millimetres"
-    unit cm
-        * "cm"
-        * "centimeter"
-        * "centimeters"
-        * "centimetre"
-        * "centimetres"
-    unit dm
-        * "dm"
-        * "decimeter"
-        * "decimeters"
-        * "decimetre"
-        * "decimetres"
-    unit km
-        * "k"
-        * "km"
-        * "kilometer"
-        * "kilometers"
-        * "kilometre"
-        * "kilometres"
-    unit mi
-        * "mi"
-        * "mile"
-        * "miles"
-    unit in
-        * "i"
-        * "in"
-        * "inch"
-        * "inches"
-    unti ft
-        * "f"
-        * "ft"
-        * "feet"
-    unit yd
-        * "y"
-        * "yd"
-        * "yard"
-        * "yards"
-define_type distance
-    describe en
-        title "Distance"
-        body "A positive numeric measure of the how far apart two objects are. Normalized to the SI unit of meter (m). If the value is found to be negative, it is made positive."
-        
-define_type duration
-    describe en
-        title "Duration"
-        body "A positive measure of time between two events. Normalized to SI unit of seconds (s)."
-    unit s
-        default
-        * "s"
-        * "sec"
-        * "second"
-        * "seconds"
-    unit m
-        * "m"
-        * "min"
-        * "mins"
-        * "minute"
-        * "minutes"
-    unit h
-        * "h"
-        * "hr"
-        * "hrs"
-        * "hour"
-        * "hours"
-    unit d
-        * "d"
-        * "day"
-        * "days"
-
-define_type mass
-    describe en
-        title "Mass"
-        body "A positive measure of the physical property of a bodies resistence to accelleration by force. At rest on a planet, weight and mass are commonly the same thing. Normalized to the SI unit of kilograme (kg)."
-    unit g
-        * "g"
-        * "gr"
-        * "gram"
-        * "grams"
-    unit kg
-        default
-        * "kg"
-        * "k"
-        * "kilo"
-        * "kilogram"
-        * "kilograms"
-        * "kilograme"
-        * "kilogrames"
-    unit hg
-        * "hg"
-    unit dag
-        * "dag"
-    unit dg
-        * "dg"
-    unit cg
-        * "cg"
-    unit mg
-        * "mg"
-    unit tonne
-        * "t"
-        * "tonne"
-        * "tonnes"
-        * "metric ton"
-        * "metric tons"
-        * "Mg"
-    unit slug
-        * "sl"
-        * "slug"
-    unit lb
-        * "lb"
-        * "lbs"
-        * "pound"
-        * "pounds"
-    unit oz
-        * "oz"
-        * "ounce"
-        * "ounces"
-        
-define_type temperature
-    describe en
-        title "Temperature"
-        body "A measure of hot and cold. Normalized to the SI unit of the Kelvin (K)".
-    unit f
-        * "f"
-        * "°f"
-        * "fahrenheit"
-    unit c
-        * "c"
-        * "°c"
-        * "celcius"
-    unit k
-        default
-        * "k"
-        * "°k"
-        * "kelvin"
-        
-define_type luminous_intensity
-    describe en
-        title "Luminous Intensity"
-        body "A measure of the vavelength-weighted power emitted by a light source in a particular direction per unit solid angle (see wikipedia). Normalized to the SI unit of candela (cd)."
-    unit cd
-        default
-        * "cd"
-        * "candela"
-
-define_type current
-    describe en
-        title "Electrical Current"
-        body "The flow of electric charge. Normalized to the SI unit of ampere (A)."
-    unit a
-        default
-        * "a"
-        * "amp"
-        * "amps"
-        * "ampere"
-        * "amperes"
-    unit ma
-        * "ma"
-        * "milliamp"
-        * "milliamps"
-        
-define_type voltage
-    describe en
-        title "Electrical Voltage"
-        body "The potential of electric force. Normalized to the SI unit of volt (V)."
-    unit v
-        default
-        * "v"
-        * "volt"
-        * "volts"
-    unit microvolt
-        * "microvolt"
-        * "microvolts"
-        * "µv"
-    unit millivolt
-        * "millivolt"
-        * "millivolts"
-        * "mV"
-    unit kilovolt
-        * "kilovolt"
-        * "kilovolts"
-        * "kV"
-    unit megavolt
-        * "megavolt"
-        * "megavolts"
-        * "MV"
-        
-define_type frequency
-    describe en
-        title "Frequency"
-        body "The count of events per unit of time. Normalized to the SI unit of hertz (Hz)."
-    unit hz
-        default
-        * "hz"
-        * "hertz"
-        * "per second"
-        * "/s"
-        * "/ s"
-    unit khz
-        * "khz"
-    unit mhz
-        * "mhz"
-    unit ghz
-        * "ghz"
-    unit invert_s
-        * "s"
-        * "seconds"
-    unit invert_ms
-        * "ms"
-        * "milliseconds"
-
-define_type boolean
-    describe en
-        title "Boolean"
-        body "The state of either Truth (existence) or False (non-existence). Normalized to the interpretation JSON-like 'true' for true and 'false' for false."
-    unit bool_true
-        default
-        * "true"
-        * 1
-        * -1
-        * "good"
-        * "t"
-        * "correct"
-        * "yes"
-        * "one"
-        * "yep"
-        * "pass"
-        * "passed"
-        * "accept"
-        * "accepted"
-        * "consent"
-        * "consented"
-        * "agree"
-        * "agreed"
-        * "embrace"
-        * "cherish"
-        * "exalt"
-        * "love"
-        * "submit"
-        * "enfold"
-        * "include"
-        * "bless"
-        * "blessed"
-        * "clean"
-    unit bool_false
-        * "false"
-        * 0
-        * "bad"
-        * "f"
-        * "incorrect"
-        * "no"
-        * "0"
-        * "zero"
-        * "nope"
-        * "fail"
-        * "failed"
-        * "reject"
-        * "rejected"
-        * "deny"
-        * "denied"
-        * "decline"
-        * "declined"
-        * "evil"
-        * "hate"
-        * "hated"
-        * "decry"
-        * "decried"
-        * "exclude"
-        * "debase"
-        * "debased"
-        * "imprecate"
-        * "curse"
-        * "cursed"
-        * "impure"
-
-define_type integer
-    describe en
-        title "Integer (Whole Number)"
-        body "A non-fractional signed number with a range of –9223372036854775808 to 9223372036854775807. Normalized to a series of decimal digits with no seperators. It is prefixed with minus (-) if the number is negative. Otherwise, there is no prefix."
-
-define_type float
-    describe en
-        title "Float (Decimal Number)"
-        body "A real number in specified by IEEE 754. It is normalized to standard scientific notation. For example, 123.4 is represented as `1.234x10^2`."
-
-'''
-
+import standard_types as st
 
 def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False, key_open=False, prefix=""):
     result = rolne()
@@ -464,7 +13,7 @@ def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False, key_o
     if doc is None:
         return result, error_list
     if schema:
-        schema, schema_errors = _SCHEMA_to_rolne(schema)
+        schema, schema_errors = SCHEMA_to_rolne(schema)
         error_list.extend(schema_errors)
     current = 0
     tab_list = [0]
@@ -676,9 +225,234 @@ def value_output(value, quote_method='all', none_handle='strict'):
     return
 
     
-standard_type_rolne = MARDS_to_rolne(standard_types)
+def SCHEMA_to_rolne(doc=None, prefix=""):
+    ################################
+    # CONVERT TO A ROLNE
+    ################################
+    schema, error_list = MARDS_to_rolne(doc, context="schema", tab_strict=True, key_open=True, prefix=prefix)
+    ################################
+    #  FIRST PASS SYNTAX CHECKING
+    #
+    # build a list of names from the document and their corresponding locations
+    # mark as False if the key is seen twice
+    # also do basic syntax checking
+    ################################
+    for key in schema.flattened_list( (), name=True, value=True, seq=True):
+        (en, ev, es) = key
+        if en in ["name", "template"]:
+            pass
+        elif en in ["#!MARDS_schema_en_1.0", "import", "local"]:
+            pass
+        elif en in ["##"]:
+            schema.seq_delete(es)
+        elif en in ["limit"]:
+            # TODO: check that parent is 'recurse'
+            parent_es = schema.seq_parent(es)
+            if schema.at_seq(parent_es).name()!='recurse':
+                error_list.append( ("schema", es, "the 'limit' element may only be applied to a 'recurse'") )
+                schema.seq_delete(es)
+            else:
+                if ev.isdigit():
+                    if int(ev)<1 or int(ev)>20:
+                        error_list.append( ("schema", es, "the 'limit' should have a integer value between 1 and 20") )
+                        schema.seq_delete(es)
+                else:
+                    error_list.append( ("schema", es, "the 'limit' should have a integer value between 1 and 20") )
+                    schema.seq_delete(es)
+        elif en in ["treatment", "value", "required", "default", "ordered"]:
+            pass
+        elif en in ["insert", "recurse", "extend", "from"]:
+            pass
+        elif en in ["describe", "title", "abstract", "body", "reference", "author", 'title', 'url', 'journal', 'book', 'date_written', 'date_retreived', 'pages', 'paragraphs', 'copyright_message', 'publisher']:
+            pass
+        elif en in ["match", "search"]:
+            pass
+        elif en in ["type", "choice", "search", "min"]:  ## TODO: Type stuff
+            pass
+        elif en in ["define_type", "unit", "*"]:  ## TODO: schema type stuff
+            pass
+        else:
+            t = ("schema", es, "'{}' not a recognized schema element name".format(en))
+            error_list.append(t)
+            schema.seq_delete(es)
+    #################################
+    #
+    # IMPLEMENT Header and imports
+    #
+    #################################
+    schema_list = schema.flattened_list(("#!MARDS_schema_en_1.0"), value=True, seq=True)
+    for (ev, es) in schema_list:
+        header = schema.at_seq(es)
+        import_list = header.flattened_list(("import"), value=True, seq=True)
+        for (iev, ies) in import_list:
+            i = header.at_seq(ies)
+            if iev:
+                prx = iev+"/"
+            else:
+                prx = "./"
+            if i.name("local"):
+                file_loc = i.value("local")
+                if file_loc is None:
+                    file_loc = iev+".MARDS-schema"
+                try:
+                    with open(file_loc, 'r') as file:
+                        subdata = file.read()
+                except IOError, e: 
+                    error_list.append ( ("schema", ies, str(e)) )
+                    subdata = None
+                if subdata:
+                    sr,e = SCHEMA_to_rolne(subdata, prefix=prx)
+                    schema.extend(sr)  #TODO: 'prepend' rather than 'extend'?
+                    # TODO: convince rolne to retain line numbering in sr
+                    error_list.extend(e)
+            else:
+                error_list.append( ("schema", ies, "unable to locate import for '{}'".format(iev)) )
+        schema.seq_delete(es)  #TODO: verify rolne .seq_delete also deletes children
+    #################################
+    #
+    # MAKE A COPY AND BUILD INDEX
+    #
+    # copy used by other functions for internal insertions, etc.
+    #################################
+    copy = schema.copy(seq_prefix="", seq_suffix="")
+    name_seq = {}
+    name_recurs = {}
+    for key in schema.flattened_list( (), name=True, value=True, seq=True):
+        (en, ev, es) = key
+        if en in ["name", "template"]:
+            if ev in name_seq:
+                name_seq[ev]=False
+            else:
+                name_seq[ev]=es
+    #################################
+    # IMPLEMENT 'template'
+    #
+    # This is done oddly: now that 'copy' has been made, we simply
+    # delete the templates from the  active rolne and rename 'template' to
+    # 'name' in the copy.
+    #################################
+
+    schema_list = schema.flattened_list(("template"), value=True, seq=True)
+    for (ev, es) in schema_list:
+        if not prefix:
+            schema.seq_delete(es)
+        copy.at_seq(es).set_name("name")
+    #print "jschema",prefix,schema
+    #print "jcopy",copy
+    #################################
+    #
+    # IMPLEMENT 'insert'
+    #
+    #################################
+    schema_list = schema.flattened_list(("insert"), value=True, seq=True)
+    safety_ctr=0
+    while schema_list and safety_ctr<20:
+        for (ev, es) in schema_list:
+            if ev in name_seq:
+                if name_seq[ev] is False:
+                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
+                    error_list.append(t)
+                    schema.seq_delete(es)
+                else:
+                    src = name_seq[ev]
+                    depth_desired = 1
+                    line = schema.seq_lineage(es)
+                    new_depth = len(line) 
+                    prx = src+".i"+str(new_depth)+"."
+                    if name_seq[ev] in line:
+                        error_list.append(("schema", es, "'insert {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
+                        schema.seq_delete(es)
+                    else:
+                        schema.seq_replace(es, copy.ptr_to_seq(src), prx)
+            else:
+                t = ("schema", es, "'name {}' not found in schema".format(ev))
+                error_list.append(t)
+                schema.seq_delete(es)
+        schema_list = schema.flattened_list(("insert"), value=True, seq=True)
+        safety_ctr += 1
+    #################################
+    #
+    # IMPLEMENT 'extend'
+    #
+    #################################
+    schema_list = schema.flattened_list(("extend"), value=True, seq=True)
+    safety_ctr=0
+    while schema_list and safety_ctr<20:
+        for (ev, es) in schema_list:
+            if ev in name_seq:
+                if name_seq[ev] is False:
+                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
+                    error_list.append(t)
+                    schema.seq_delete(es)
+                else:
+                    src = name_seq[ev]
+                    depth_desired = 1
+                    line = schema.seq_lineage(es)
+                    new_depth = len(line) 
+                    prx = src+".e"+str(new_depth)+"."
+                    if name_seq[ev] in line:
+                        error_list.append(("schema", es, "'extend {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
+                        schema.seq_delete(es)
+                    else:
+                        parent = schema.at_seq(schema.seq_parent(es))
+                        children = copy.at_seq(src)
+                        parent.extend(children, prefix=prx)
+                        schema.seq_delete(es)
+            else:
+                t = ("schema", es, "'name {}' not found in schema".format(ev))
+                error_list.append(t)
+                schema.seq_delete(es)
+        schema_list = schema.flattened_list(("extend"), value=True, seq=True)
+        safety_ctr += 1
+    #################################
+    #
+    # IMPLEMENT 'resurse' recursion
+    #
+    #################################
+    schema_list = schema.flattened_list(("recurse"), value=True, seq=True)
+    safety_ctr=0
+    while schema_list and safety_ctr<20:
+        for (ev, es) in schema_list:
+            if ev in name_seq:
+                if name_seq[ev] is False:
+                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
+                    error_list.append(t)
+                    schema.seq_delete(es)
+                else:
+                    src = name_seq[ev]
+                    depth_desired = schema.at_seq(es).value("limit")
+                    if depth_desired is None:
+                        depth_desired = 2
+                    else:
+                        depth_desired = int(depth_desired)
+                    line = schema.seq_lineage(es)
+                    new_depth = len(line)-1 
+                    prx = src+".r"+str(new_depth)+"."
+                    if name_seq[ev] in line:
+                        if new_depth<=depth_desired:
+                            schema.seq_replace(es, copy.ptr_to_seq(src), prx)
+                        else:
+                            schema.seq_delete(es)
+                    else:
+                        error_list.append(("schema", es, "'recurse {}' is not recursive".format(ev)))
+                        schema.seq_delete(es)
+            else:
+                t = ("schema", es, "'name {}' not found in schema".format(ev))
+                error_list.append(t)
+                schema.seq_delete(es)
+        schema_list = schema.flattened_list(("recurse"), value=True, seq=True)
+        safety_ctr += 1
+    ########################
+    #   DONE
+    ########################
+    return schema, error_list
     
 def schema_rolne_check(doc, schema):
+    '''
+    CHECK THE DOCUMENT AGAINST IT'S SCHEMA
+    
+    returns: clean-up-document, error_list
+    '''
     error_list = []
     #
     # PASS ONE: FORWARD CHECK OF DOC
@@ -701,6 +475,12 @@ def schema_rolne_check(doc, schema):
     #
     el = sub_schema_treatments(doc, schema)
     error_list.extend(el)
+    #
+    # PASS FOUR: TYPE CHECKS AND NORMALIZATION
+    #
+    doc, el = st.apply_schema_types(doc, schema)
+    error_list.extend(el)
+    #
     return doc, error_list
 
 def check_schema_coverage(doc, schema):
@@ -942,225 +722,6 @@ def type_aware_sum_value(item_a, item_b, item_type=None):
             result = str(item_a)+str(item_b)
     return result
 
-def _SCHEMA_to_rolne(doc=None, prefix=""):
-    ################################
-    # CONVERT TO A ROLNE
-    ################################
-    schema, error_list = MARDS_to_rolne(doc, context="schema", tab_strict=True, key_open=True, prefix=prefix)
-    ################################
-    #  FIRST PASS SYNTAX CHECKING
-    #
-    # build a list of names from the document and their corresponding locations
-    # mark as False if the key is seen twice
-    # also do basic syntax checking
-    ################################
-    for key in schema.flattened_list( (), name=True, value=True, seq=True):
-        (en, ev, es) = key
-        if en in ["name", "template"]:
-            pass
-        elif en in ["#!MARDS_schema_en_1.0", "import", "local"]:
-            pass
-        elif en in ["##"]:
-            schema.seq_delete(es)
-        elif en in ["limit"]:
-            # TODO: check that parent is 'recurse'
-            parent_es = schema.seq_parent(es)
-            if schema.at_seq(parent_es).name()!='recurse':
-                error_list.append( ("schema", es, "the 'limit' element may only be applied to a 'recurse'") )
-                schema.seq_delete(es)
-            else:
-                if ev.isdigit():
-                    if int(ev)<1 or int(ev)>20:
-                        error_list.append( ("schema", es, "the 'limit' should have a integer value between 1 and 20") )
-                        schema.seq_delete(es)
-                else:
-                    error_list.append( ("schema", es, "the 'limit' should have a integer value between 1 and 20") )
-                    schema.seq_delete(es)
-        elif en in ["treatment", "value", "required", "default", "ordered"]:
-            pass
-        elif en in ["insert", "recurse", "extend", "from"]:
-            pass
-        elif en in ["describe", "title", "abstract", "body", "reference", "author", 'title', 'url', 'journal', 'book', 'date_written', 'date_retreived', 'pages', 'paragraphs', 'copyright_message', 'publisher']:
-            pass
-        elif en in ["match", "search"]:
-            pass
-        elif en in ["type", "choice", "search", "min"]:  ## TODO: Type stuff
-            pass
-        else:
-            t = ("schema", es, "'{}' not a recognized schema element name".format(en))
-            error_list.append(t)
-            schema.seq_delete(es)
-    #################################
-    #
-    # IMPLEMENT Header and imports
-    #
-    #################################
-    schema_list = schema.flattened_list(("#!MARDS_schema_en_1.0"), value=True, seq=True)
-    for (ev, es) in schema_list:
-        header = schema.at_seq(es)
-        import_list = header.flattened_list(("import"), value=True, seq=True)
-        for (iev, ies) in import_list:
-            i = header.at_seq(ies)
-            if iev:
-                prx = iev+"/"
-            else:
-                prx = "./"
-            if i.name("local"):
-                file_loc = i.value("local")
-                if file_loc is None:
-                    file_loc = iev+".MARDS-schema"
-                try:
-                    with open(file_loc, 'r') as file:
-                        subdata = file.read()
-                except IOError, e: 
-                    error_list.append ( ("schema", ies, str(e)) )
-                    subdata = None
-                if subdata:
-                    sr,e = _SCHEMA_to_rolne(subdata, prefix=prx)
-                    schema.extend(sr)  #TODO: 'prepend' rather than 'extend'?
-                    # TODO: convince rolne to retain line numbering in sr
-                    error_list.extend(e)
-            else:
-                error_list.append( ("schema", ies, "unable to locate import for '{}'".format(iev)) )
-        schema.seq_delete(es)  #TODO: verify rolne .seq_delete also deletes children
-    #################################
-    #
-    # MAKE A COPY AND BUILD INDEX
-    #
-    # copy used by other functions for internal insertions, etc.
-    #################################
-    copy = schema.copy(seq_prefix="", seq_suffix="")
-    name_seq = {}
-    name_recurs = {}
-    for key in schema.flattened_list( (), name=True, value=True, seq=True):
-        (en, ev, es) = key
-        if en in ["name", "template"]:
-            if ev in name_seq:
-                name_seq[ev]=False
-            else:
-                name_seq[ev]=es
-    #################################
-    # IMPLEMENT 'template'
-    #
-    # This is done oddly: now that 'copy' has been made, we simply
-    # delete the templates from the  active rolne and rename 'template' to
-    # 'name' in the copy.
-    #################################
-
-    schema_list = schema.flattened_list(("template"), value=True, seq=True)
-    for (ev, es) in schema_list:
-        if not prefix:
-            schema.seq_delete(es)
-        copy.at_seq(es).set_name("name")
-    #print "jschema",prefix,schema
-    #print "jcopy",copy
-    #################################
-    #
-    # IMPLEMENT 'insert'
-    #
-    #################################
-    schema_list = schema.flattened_list(("insert"), value=True, seq=True)
-    safety_ctr=0
-    while schema_list and safety_ctr<20:
-        for (ev, es) in schema_list:
-            if ev in name_seq:
-                if name_seq[ev] is False:
-                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
-                    error_list.append(t)
-                    schema.seq_delete(es)
-                else:
-                    src = name_seq[ev]
-                    depth_desired = 1
-                    line = schema.seq_lineage(es)
-                    new_depth = len(line) 
-                    prx = src+".i"+str(new_depth)+"."
-                    if name_seq[ev] in line:
-                        error_list.append(("schema", es, "'insert {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
-                        schema.seq_delete(es)
-                    else:
-                        schema.seq_replace(es, copy.ptr_to_seq(src), prx)
-            else:
-                t = ("schema", es, "'name {}' not found in schema".format(ev))
-                error_list.append(t)
-                schema.seq_delete(es)
-        schema_list = schema.flattened_list(("insert"), value=True, seq=True)
-        safety_ctr += 1
-    #################################
-    #
-    # IMPLEMENT 'extend'
-    #
-    #################################
-    schema_list = schema.flattened_list(("extend"), value=True, seq=True)
-    safety_ctr=0
-    while schema_list and safety_ctr<20:
-        for (ev, es) in schema_list:
-            if ev in name_seq:
-                if name_seq[ev] is False:
-                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
-                    error_list.append(t)
-                    schema.seq_delete(es)
-                else:
-                    src = name_seq[ev]
-                    depth_desired = 1
-                    line = schema.seq_lineage(es)
-                    new_depth = len(line) 
-                    prx = src+".e"+str(new_depth)+"."
-                    if name_seq[ev] in line:
-                        error_list.append(("schema", es, "'extend {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
-                        schema.seq_delete(es)
-                    else:
-                        parent = schema.at_seq(schema.seq_parent(es))
-                        children = copy.at_seq(src)
-                        parent.extend(children, prefix=prx)
-                        schema.seq_delete(es)
-            else:
-                t = ("schema", es, "'name {}' not found in schema".format(ev))
-                error_list.append(t)
-                schema.seq_delete(es)
-        schema_list = schema.flattened_list(("extend"), value=True, seq=True)
-        safety_ctr += 1
-    #################################
-    #
-    # IMPLEMENT 'resurse' recursion
-    #
-    #################################
-    schema_list = schema.flattened_list(("recurse"), value=True, seq=True)
-    safety_ctr=0
-    while schema_list and safety_ctr<20:
-        for (ev, es) in schema_list:
-            if ev in name_seq:
-                if name_seq[ev] is False:
-                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
-                    error_list.append(t)
-                    schema.seq_delete(es)
-                else:
-                    src = name_seq[ev]
-                    depth_desired = schema.at_seq(es).value("limit")
-                    if depth_desired is None:
-                        depth_desired = 2
-                    else:
-                        depth_desired = int(depth_desired)
-                    line = schema.seq_lineage(es)
-                    new_depth = len(line)-1 
-                    prx = src+".r"+str(new_depth)+"."
-                    if name_seq[ev] in line:
-                        if new_depth<=depth_desired:
-                            schema.seq_replace(es, copy.ptr_to_seq(src), prx)
-                        else:
-                            schema.seq_delete(es)
-                    else:
-                        error_list.append(("schema", es, "'recurse {}' is not recursive".format(ev)))
-                        schema.seq_delete(es)
-            else:
-                t = ("schema", es, "'name {}' not found in schema".format(ev))
-                error_list.append(t)
-                schema.seq_delete(es)
-        schema_list = schema.flattened_list(("recurse"), value=True, seq=True)
-        safety_ctr += 1
-    ########################
-    #   DONE
-    ########################
-    return schema, error_list
 
     
     

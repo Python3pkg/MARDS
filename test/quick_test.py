@@ -11,7 +11,7 @@ import MARDS
 doc = '''
 #!MARDS_en_1.0
 
-blink zippy
+blink zippy_boing!
     abc
         joex 44
 item "broom"
@@ -55,7 +55,7 @@ name item
             default "unknown"
 '''
 
-# x,e = MARDS._SCHEMA_to_rolne(schema)
+#x,e = MARDS.ml._SCHEMA_to_rolne(MARDS.ml.standard_types)
 x,e = MARDS.string_to_rolne(doc, schema)
 print "FINAL:\n"
 print x._explicit()
