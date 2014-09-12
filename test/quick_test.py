@@ -1,3 +1,4 @@
+# -*- coding: iso-8859-1 -*-
 import sys, os
 # the action below is a no-no in standard python, but it is done here for
 # easy on-the-fly testing.
@@ -20,7 +21,7 @@ item "broom"
         intensity 33%
 item "brush"
     size 2
-zed 14.32K
+zed 1.234e+2
 '''
 
 schema = '''
@@ -41,7 +42,7 @@ template abc
     name joey
 name zed
     value
-        type length
+        type float
 name item
     treatment unique
     value

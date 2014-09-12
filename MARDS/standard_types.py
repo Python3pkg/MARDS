@@ -6,465 +6,15 @@
 
 from rolne import rolne
 import regex
-import unicodedata
 import decimal
+import math
 from mards_library import SCHEMA_to_rolne
+from standard_types_schema import standard_types
 
-standard_types = '''\
-#!MARDS_schema_en_1.0
-
-define_type string
-    describe en
-        title "String (UTF8)"
-        body "A string is any sequence of UTF8 characters. This is the default type if no other type is specified."
-
-define_type label
-    describe en
-        title "Label"
-        body "A UTF8 unicode string containing alphabetic characters, digits 0 to 9, underscores (\_), and periods. No other characters are permitted. Labels are generally case-sensitive."
-        body ""
-        body "Very explicitly: whitespace characters are forbidden (such as SPACE and TAB). Punctuation of any kind (other than underscores and periods) are forbidden."
-        body ""
-        body "The MARDS spec uses label rules for names in the name<space>value. However, it purposefully makes exception for labels that start with # symbol for outside-context exceptions such as for comments."
-        body ""
-        body "#Convention"
-        body ""
-        body "A label that follows the rules is ultimates a true label. However, there are conventions used in the making of the labels in English. Following these conventions makes the human interpretation of the labels much easier. They are as follows:"
-        body ""
-        body " *  Seperate words with underscores. Don't use CamelCase. So, instead of:"
-        body ""
-        body "    `OneTwoThree`"
-        body ""
-        body "    use:"
-        body ""
-        body "    `one_two_three`"
-        body ""
-        body " *  use all lower case letters unless called for by standard writing convention. A label is not assumed to be a sentence, so the first word should not be capitalized unless called for by other convention rules. So, instead of:"
-        body ""
-        body "    `Qty_Of_Johns_Boxes`"
-        body ""
-        body "    use:"
-        body ""
-        body "    `qty_of_Johns_boxes`"
-        body ""
-        body "    Notice that 'J' remains capitalized since 'John' is a persons name and would be capitalized by English writing convention."
-        body ""
-        body " *  Punctuation is 'skipped' rather than given an underscore unless such an underscore greatly adds clarity. So, instead of:"
-        body ""
-        body "    `qty_of_John_s_boxes`"
-        body ""
-        body "    use:"
-        body ""
-        body "    `qty_of_Johns_boxes`"
-        body ""
-        body " *  if the label is a schema name, imply the type of unit expected IF it aids clarity. Ideally it would be a suffix with the full type label. So, instead of:"
-        body ""
-        body "    `part4_twist`"
-        body ""
-        body "    use:"
-        body ""
-        body "    `part4_twist_percent`"
-        body ""
-        body " *  avoid the use of periods (.) for simple labels. The periods are meant to imply sectional seperation. TODO: expand this."
-        body " *  reserve labels that start with an underscore for information that should be repressed from publication or normal/typical view. A single underscore implies mild suppression. A double underscore implies strong supression. The actual meaning of 'suppression' is a matter of context."
-        body " *  Don't end a label with underscores or periods."
-
-define_type price
-    describe en
-        title "Price"
-        body "The proposed quantity of money or other compensation in exchange for a good or service. The normalization depends on the currency."
-    unit USD
-        describe en
-            title "U.S. Dollars"
-            body "A quantity of US Dollars. Precision is assumed to be to 6 decimal places. That is to say that $43.1234567 would be rounded to `43.123457 USD`. Regardless of the number, at least two decimal places are displayed. For example, $100 would normalize to `100.00 USD` but $100.932 would normalize to `100.932 USD`. But, again, the precision is to 6 decimal places regardless of display. So, $100.000000 is the same as $100. And, $100.932 is the same as $100.932000.
-        default
-        * "usd"
-        * "us"
-        * "dollars"
-        ## prefix "$"
-    unit USD-cents
-        * "c"
-        * "cents"
-        * "pennies"
-        * "¢"
-
-define_type qty
-    describe en
-        title "Quantity"
-        body "A positive integer representing the amount of discrete objects, items, or services contained, needed, or desired. The number range is from 0 to 9223372036854775807. Normalized to a series of decimal digits with no seperators."
-
-define_type percent
-    describe en
-        title "Percentage"
-        body "A fraction of unity. Normalized to a simple decimal fraction. So, nothing is '0.0' and all is '1.0'. Can alternatively represented by the '%' symbol, such as '0%' and '100.0%'. A percentage cannot be below zero, but it has no upper limit."
-    unit fraction
-        default
-    unit percent
-        * "%"
-
-define_type check_list
-    describe en
-        title "Choice/Check List"
-        body "A list of labels. Each label is restricted to the 'choice' elements under the 'type check_list' definition."
-        body ""
-        body "Each label is seperated by whitespace and/or other non-label characters."
-        body ""
-        body "A common convention is to use commas to visually aid in the seperation. This is not strictly required however. So, a value of `one, two, three` is the same as `one two three`. The single COMMA SPACE seperation is the normalized result."
-        body ""
-        body "If the schema defines the value as _required_, then the there must be at least one label selected. Otherwise, zero labels can be selected."
-    name choice
-        treatment unique
-        value
-            required
-            type label
-
-define_type radio_select
-    describe en
-        title "Radio Select"
-        body "A selected label. The label is restricted to the 'choice' elements under the 'type radio_select' definition."
-        body ""
-        body "If the schema defines the value as _required_, then the there must be a label selected. Otherwise, the value can be empty."
-    name choice
-        treatment unique
-        value
-            required
-            type label
-
-define_type ignore
-    describe en
-        title "Ignored Value"
-        body "A value with an 'ignore' type is discarded. Normalized to an empty string."
-
-define_type unit
-    describe en
-        title "Desired Unit"
-        body "A short sequence of characters indicating a desired or required unit of measurement. It is treated just like a 'string' type."
-
-define_type degree
-    describe en
-        body "A unit of angle measurement. It is normalized to simple radians."
-    unit deg
-        * "°"
-        * "deg"
-        * "degree"
-    unit rad
-        default
-        * "rad"
-        * "radian"
-
-define_type file
-    describe en
-        title "File Label"
-        body "A name of a file on an storage system. The name is expected to conform to a label. As such, there might be additional information added to make it a real file name when used by the local computer."
-
-define_type length
-    describe en
-        title "Length"
-        body "The extent of something from end to end. Normalized to SI unit of meter (m)"
-    unit m
-        default
-        * "m"
-        * "meter"
-        * "meters"
-        * "metre"
-        * "metres"
-    unit mm
-        * "mm"
-        * "millimeter"
-        * "millimeters"
-        * "millimetre"
-        * "millimetres"
-    unit cm
-        * "cm"
-        * "centimeter"
-        * "centimeters"
-        * "centimetre"
-        * "centimetres"
-    unit dm
-        * "dm"
-        * "decimeter"
-        * "decimeters"
-        * "decimetre"
-        * "decimetres"
-    unit km
-        * "k"
-        * "km"
-        * "kilometer"
-        * "kilometers"
-        * "kilometre"
-        * "kilometres"
-    unit mi
-        * "mi"
-        * "mile"
-        * "miles"
-    unit in
-        * "i"
-        * "in"
-        * "inch"
-        * "inches"
-    unit ft
-        * "f"
-        * "ft"
-        * "feet"
-    unit yd
-        * "y"
-        * "yd"
-        * "yard"
-        * "yards"
-define_type distance
-    describe en
-        title "Distance"
-        body "A positive numeric measure of the how far apart two objects are. Normalized to the SI unit of meter (m). If the value is found to be negative, it is made positive."
-        
-define_type duration
-    describe en
-        title "Duration"
-        body "A positive measure of time between two events. Normalized to SI unit of seconds (s)."
-    unit s
-        default
-        * "s"
-        * "sec"
-        * "second"
-        * "seconds"
-    unit m
-        * "m"
-        * "min"
-        * "mins"
-        * "minute"
-        * "minutes"
-    unit h
-        * "h"
-        * "hr"
-        * "hrs"
-        * "hour"
-        * "hours"
-    unit d
-        * "d"
-        * "day"
-        * "days"
-
-define_type mass
-    describe en
-        title "Mass"
-        body "A positive measure of the physical property of a bodies resistence to accelleration by force. At rest on a planet, weight and mass are commonly the same thing. Normalized to the SI unit of kilograme (kg)."
-    unit g
-        * "g"
-        * "gr"
-        * "gram"
-        * "grams"
-    unit kg
-        default
-        * "kg"
-        * "k"
-        * "kilo"
-        * "kilogram"
-        * "kilograms"
-        * "kilograme"
-        * "kilogrames"
-    unit hg
-        * "hg"
-    unit dag
-        * "dag"
-    unit dg
-        * "dg"
-    unit cg
-        * "cg"
-    unit mg
-        * "mg"
-    unit tonne
-        * "t"
-        * "tonne"
-        * "tonnes"
-        * "metric ton"
-        * "metric tons"
-        * "Mg"
-    unit slug
-        * "sl"
-        * "slug"
-    unit lb
-        * "lb"
-        * "lbs"
-        * "pound"
-        * "pounds"
-    unit oz
-        * "oz"
-        * "ounce"
-        * "ounces"
-        
-define_type temperature
-    describe en
-        title "Temperature"
-        body "A measure of hot and cold. Normalized to the SI unit of the Kelvin (K)".
-    unit f
-        * "f"
-        * "°f"
-        * "fahrenheit"
-    unit c
-        * "c"
-        * "°c"
-        * "celcius"
-    unit k
-        default
-        * "k"
-        * "°k"
-        * "kelvin"
-        
-define_type luminous_intensity
-    describe en
-        title "Luminous Intensity"
-        body "A measure of the vavelength-weighted power emitted by a light source in a particular direction per unit solid angle (see wikipedia). Normalized to the SI unit of candela (cd)."
-    unit cd
-        default
-        * "cd"
-        * "candela"
-
-define_type current
-    describe en
-        title "Electrical Current"
-        body "The flow of electric charge. Normalized to the SI unit of ampere (A)."
-    unit a
-        default
-        * "a"
-        * "amp"
-        * "amps"
-        * "ampere"
-        * "amperes"
-    unit ma
-        * "ma"
-        * "milliamp"
-        * "milliamps"
-        
-define_type voltage
-    describe en
-        title "Electrical Voltage"
-        body "The potential of electric force. Normalized to the SI unit of volt (V)."
-    unit v
-        default
-        * "v"
-        * "volt"
-        * "volts"
-    unit microvolt
-        * "microvolt"
-        * "microvolts"
-        * "µv"
-    unit millivolt
-        * "millivolt"
-        * "millivolts"
-        * "mV"
-    unit kilovolt
-        * "kilovolt"
-        * "kilovolts"
-        * "kV"
-    unit megavolt
-        * "megavolt"
-        * "megavolts"
-        * "MV"
-        
-define_type frequency
-    describe en
-        title "Frequency"
-        body "The count of events per unit of time. Normalized to the SI unit of hertz (Hz)."
-    unit hz
-        default
-        * "hz"
-        * "hertz"
-        * "per second"
-        * "/s"
-        * "/ s"
-    unit khz
-        * "khz"
-    unit mhz
-        * "mhz"
-    unit ghz
-        * "ghz"
-    unit invert_s
-        * "s"
-        * "seconds"
-    unit invert_ms
-        * "ms"
-        * "milliseconds"
-
-define_type boolean
-    describe en
-        title "Boolean"
-        body "The state of either Truth (existence) or False (non-existence). Normalized to the interpretation JSON-like 'true' for true and 'false' for false."
-    unit bool_true
-        default
-        * "true"
-        * 1
-        * -1
-        * "good"
-        * "t"
-        * "correct"
-        * "yes"
-        * "one"
-        * "yep"
-        * "pass"
-        * "passed"
-        * "accept"
-        * "accepted"
-        * "consent"
-        * "consented"
-        * "agree"
-        * "agreed"
-        * "embrace"
-        * "cherish"
-        * "exalt"
-        * "love"
-        * "submit"
-        * "enfold"
-        * "include"
-        * "bless"
-        * "blessed"
-        * "clean"
-    unit bool_false
-        * "false"
-        * 0
-        * "bad"
-        * "f"
-        * "incorrect"
-        * "no"
-        * "0"
-        * "zero"
-        * "nope"
-        * "fail"
-        * "failed"
-        * "reject"
-        * "rejected"
-        * "deny"
-        * "denied"
-        * "decline"
-        * "declined"
-        * "evil"
-        * "hate"
-        * "hated"
-        * "decry"
-        * "decried"
-        * "exclude"
-        * "debase"
-        * "debased"
-        * "imprecate"
-        * "curse"
-        * "cursed"
-        * "impure"
-
-define_type integer
-    describe en
-        title "Integer (Whole Number)"
-        body "A non-fractional signed number with a range of –9223372036854775808 to 9223372036854775807. Normalized to a series of decimal digits with no seperators. It is prefixed with minus (-) if the number is negative. Otherwise, there is no prefix."
-
-define_type float
-    describe en
-        title "Float (Decimal Number)"
-        body "A real number in specified by IEEE 754. It is normalized to standard scientific notation. For example, 123.4 is represented as `1.234x10^2`."
-
-'''
 
 standard_type_rolne, e = SCHEMA_to_rolne(standard_types)
 if e:
     print "standard_library errors: "+repr(e)
-    
-
     
 def apply_schema_types(doc, schema):
     global standard_type_rolne
@@ -504,16 +54,60 @@ def get_item_rule(item, schema):
 def do_normalization(item, rule, schema):
     value_type = rule.value()
     type_rule = schema.find("define_type", value_type)
-    if value_type=="label":
+    if  value_type=="string":
+        error_list = [] ## nothing to do for a string type
+    elif value_type=="label":
+        error_list = do_norm_label(item, rule, type_rule)
+    elif value_type=="price":
+        error_list = do_norm_price(item, rule, type_rule)
+    elif value_type=="qty":
+        error_list = do_norm_qty(item, rule, type_rule)
+    elif value_type=="percent":
+        error_list = do_norm_percent(item, rule, type_rule)
+    elif value_type=="check_list":
+        error_list = do_norm_check_list(item, rule, type_rule)
+    elif value_type=="radio_select":
+        error_list = do_norm_radio_select(item, rule, type_rule)
+    elif value_type=="ignore":
+        error_list = []
+        item.set_value(None)
+    elif value_type=="unit":
+        error_list = [] ## nothing to do for a unit type
+    elif value_type=="angle":
+        error_list = do_norm_angle(item, rule, type_rule)
+    elif value_type=="file":
         error_list = do_norm_label(item, rule, type_rule)
     elif value_type=="length":
         error_list = do_norm_length(item, rule, type_rule)
+    elif value_type=="distance":
+        type_rule = schema.find("define_type", "length")
+        error_list = do_norm_length(item, rule, type_rule, as_distance=True)
+    elif value_type=="duration":
+        error_list = do_norm_duration(item, rule, type_rule)
+    elif value_type=="mass":
+        error_list = do_norm_mass(item, rule, type_rule)
+    elif value_type=="temperature":
+        error_list = do_norm_temperature(item, rule, type_rule)
+    elif value_type=="luminous_intensity":
+        error_list = do_norm_luminous_intensity(item, rule, type_rule)
+    elif value_type=="current":
+        error_list = do_norm_current(item, rule, type_rule)
+    elif value_type=="voltage":
+        error_list = do_norm_voltage(item, rule, type_rule)
+    elif value_type=="frequency":
+        error_list = do_norm_frequency(item, rule, type_rule)
+    elif value_type=="boolean":
+        error_list = do_norm_boolean(item, rule, type_rule)
+    elif value_type=="integer":
+        error_list = do_norm_integer(item, rule, type_rule)
+    elif value_type=="float":
+        error_list = do_norm_float(item, rule, type_rule)
     else:
         # TODO: allow/search for user-defined types
-        error_list = [ ("schema", rule.seq(), "'type {}' unknown.".format(value_type)) ]
+        error_list = [ ("[error]", "schema", rule.seq(), "'type {}' unknown.".format(value_type)) ]
     return error_list
     
-label_search = regex.compile(ur"[\p{Z}\p{P}](?<!_)(?<!\.)", regex.UNICODE)
+label_search = regex.compile(ur"[\p{Z}\p{P}^](?<!_)(?<!\.)", regex.UNICODE)
 
 def do_norm_label(item, rule, type_rule):
     global label_search
@@ -523,14 +117,144 @@ def do_norm_label(item, rule, type_rule):
     if value is not None:
         r = label_search.search(value)
         if r:
-            error_list = [("doc", item.seq(), "'{} {}' has characters not permitted. Detail: '{}'".format(item.name(), value, str(r)))]
+            error_list = [("[error]", "doc", item.seq(), "'{} {}' has characters not permitted. Detail: '{}'".format(item.name(), value, str(r)))]
     return error_list
-    
-def do_norm_length(item, rule, type_rule):
+
+def do_norm_price(item, rule, type_rule):
+    error_list = []
+    flag, number, raw_unit = split_number_unit(item.value(), strip_list=['$'])
+    if not flag:
+        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a price.".format(str(item.value())))]
+    else:
+        unit = find_unit(raw_unit.lower(), type_rule)
+        if unit == "USD":
+            final = number*decimal.Decimal('1.00')
+        elif unit == "USD_cents":
+            final = number/decimal.Decimal('100.00')
+        elif unit==False:
+            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a currency (price) unit.".format(raw_unit))]
+            return error_list
+        else:
+            final = number*decimal.Decimal('1.00')
+        final = final.quantize(decimal.Decimal('0.000001'))
+        string = str(final)+" USD"
+        item.set_value(string)
+    return error_list
+
+def do_norm_qty(item, rule, type_rule):
     error_list = []
     flag, number, raw_unit = split_number_unit(item.value())
     if not flag:
-        error_list = [("doc", item.seq(), "unable to interpret '{}' as a length.".format(str(item.value())))]
+        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a quantity.".format(str(item.value())))]
+    else:
+        if raw_unit:
+            error_list = [("[error]", "doc", item.seq(), "a unit '{}' is not expected for a basic quantity.".format(raw_unit))]
+            return error_list
+        else:
+            final = number
+        before = str(final)
+        final = final.quantize(decimal.Decimal('1'))
+        string = str(final)
+        if string!=before:
+            error_list = [("[warning]", "doc", item.seq(), "'{}' was rounded to '{}' as a basic quantity.".format(before, string))]
+        item.set_value(string)
+    return error_list
+
+def do_norm_percent(item, rule, type_rule):
+    error_list = []
+    flag, number, raw_unit = split_number_unit(item.value())
+    if not flag:
+        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a percentage.".format(str(item.value())))]
+    else:
+        unit = find_unit(raw_unit.lower(), type_rule)
+        if unit == "fraction":
+            final = number*decimal.Decimal('100')
+        elif unit == "percent":
+            final = number
+        elif unit==False:
+            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a percent symbol or unit.".format(raw_unit))]
+            return error_list
+        else:
+            final = number
+        string = str(final) + " %"
+        item.set_value(string)
+    return error_list
+    
+def do_norm_check_list(item, rule, type_rule):
+    global label_search
+    error_list = []
+    label_list = []
+    in_word_state = False
+    for ch in item.value():
+        if in_word_state:
+            if label_search.search(ch):
+                in_word_state = False
+                label_list.append(new_word)
+                new_word = ""
+            else:
+                new_word += ch
+        else:
+            if label_search.search(ch):
+                pass
+            else:
+                new_word = ch
+                in_word_state = True
+    else:
+        if new_word:
+            label_list.append(new_word)
+    proper_labels = rule.list_values("choice")
+    final_list = []
+    for label in label_list:
+        if label in proper_labels:
+            final_list.append(label)
+        else:
+            error_list.append( ("[error]", "doc", item.seq(), "item '{}' not found in allowed choices: {}. item ignored.".format(label, repr(proper_labels))) )
+    string = ", ".join(final_list)
+    item.set_value(string)
+    return error_list
+
+def do_norm_radio_select(item, rule, type_rule):
+    global label_search
+    error_list = []
+    if item.value() is not None:
+        value = unicode(item.value())
+        r = label_search.search(value)
+        if r:
+            error_list = [("[error]", "doc", item.seq(), "'{} {}' has characters not permitted. Detail: '{}'".format(item.name(), value, str(r)))]
+        else:
+            proper_labels = rule.list_values("choice")
+            if value not in proper_labels:
+                error_list.append( ("[error]", "doc", item.seq(), "selection '{}' not found in allowed choices: {}.".format(value, repr(proper_labels))) )
+    return error_list
+
+def do_norm_angle(item, rule, type_rule):
+    error_list = []
+    flag, number, raw_unit = split_number_unit(item.value())
+    if not flag:
+        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as an angle.".format(str(item.value())))]
+    else:
+        unit = find_unit(raw_unit.lower(), type_rule)
+        if unit == "degree":
+            final = math.radians(number)
+        elif unit == "radian":
+            final = number
+        elif unit==False:
+            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a percent symbol or unit.".format(raw_unit))]
+            return error_list
+        else:
+            final = number
+        string = str(final) + " radians"
+        item.set_value(string)
+    return error_list
+   
+def do_norm_length(item, rule, type_rule, as_distance=False):
+    error_list = []
+    flag, number, raw_unit = split_number_unit(item.value())
+    if not flag:
+        if as_distance:
+            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a distance.".format(str(item.value())))]
+        else:
+            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a length.".format(str(item.value())))]
     else:
         unit = find_unit(raw_unit.lower(), type_rule)
         if (unit == "in"):
@@ -556,21 +280,336 @@ def do_norm_length(item, rule, type_rule):
         elif unit == "mm":
             final = number*decimal.Decimal('0.001')
         elif unit == False:
-            error_list = [("doc", item.seq(), "unable to interpret '{}' as a length unit.".format(raw_unit))]
+            if as_distance:
+                error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a distance unit.".format(raw_unit))]
+            else:
+                error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a length unit.".format(raw_unit))]
             return error_list
         else:
             final = number
+        if as_distance and final<0:
+            final = final*decimal.Decimal('-1')
         string = str(final)+" m"
         item.set_value(string)
     return error_list
+
+def do_norm_duration(item, rule, type_rule):
+    error_list = []
+    if item.value() is None:
+        return error_list
+    string = item.value()
+    success = True
+    if ":" in string:
+        ###
+        #  handle a string in hours:min:sec format
+        ###
+        parts = string.split(":")
+        mult = decimal.Decimal('1')
+        number = decimal.Decimal('0.0')
+        for part in reversed(parts):
+            try:
+                temp = decimal.Decimal(part.strip())
+                number += temp*mult
+            except:
+                success = False
+                error_list.append(  ("[error]", "doc", item.seq(), "unable to interpret '{}' as a portion of time.".format(part))  )
+            mult = mult*decimal.Decimal('60')
+    else:
+        ###
+        #  handle a wild string
+        #    possiblities:
+        #     simple:  24 sec
+        #     pairs: 1 minute 22 sec
+        #     trunc pairs: 1 minute 22
+        #     mushed pairs: 1minute 22sec
+        #     out of order mushed:  22sec 1minute
+        #     bunch of seconds: 2 3 6
+        #           (2+3+6 = 11s)
+        ###
+        pair_list = []
+        word_list = string.split()
+        pending_number = None
+        for word in word_list:
+            good_number_flag, number, raw_unit = split_number_unit(word)
+            if good_number_flag and raw_unit:
+                if pending_number:
+                    pair_list.append( (pending_number, "s") )
+                pair_list.append( (number, raw_unit) )
+                pending_number = None
+            elif good_number_flag:
+                if pending_number:
+                    pair_list.append( (pending_number, "s") )
+                pending_number = number
+            else:
+                if raw_unit.lower() in ["and", "+", "&"]:
+                    continue
+                if pending_number:
+                    pair_list.append( (pending_number, raw_unit) )
+                    pending_number = None
+                else:
+                    error_list.append(("[error]", "doc", item.seq(), "unable to interpret '{}' duration. note: '{}' in context.".format(string, word)))
+                    success = False
+        else:
+            if pending_number:
+                pair_list.append( (pending_number, "s") )
+        number = decimal.Decimal()
+        for (num_part, raw_unit) in pair_list:
+            unit = find_unit(raw_unit.lower(), type_rule)
+            if (unit == "s"):
+                number += num_part
+            elif (unit == "m"):
+                number += num_part*decimal.Decimal('60')
+            elif (unit == "h"):
+                number += num_part*decimal.Decimal(60*60)
+            elif (unit=="d"):
+                number += num_part*decimal.Decimal(60*60*24)
+            elif unit == False:
+                error_list.append(("[error]", "doc", item.seq(), "unable to interpret '{} {}' as a time unit for duration.".format(str(num_part), raw_unit)))
+                success = False
+    if success:
+        final = str(number)+" s"
+        item.set_value(final)        
+    return error_list
+
+def do_norm_mass(item, rule, type_rule):
+    error_list = []
+    flag, number, raw_unit = split_number_unit(item.value())
+    if not flag:
+        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a mass.".format(str(item.value())))]
+    else:
+        unit = find_unit(raw_unit.lower(), type_rule)
+        if raw_unit == "mg": # resolving capitalization difference
+            unit = "mg"
+        if raw_unit == "Mg": # resolving capitalization difference
+            unit = "tonne"
+        if unit == "kg":
+            final = number
+        elif unit == "hg":
+            final = number/decimal.Decimal('10')           
+        elif unit == "dag":
+            final = number/decimal.Decimal('100')           
+        elif unit == "g":
+            final = number/decimal.Decimal('1000')
+        elif unit == "dg":
+            final = number/decimal.Decimal('10000')
+        elif unit == "cg":
+            final = number/decimal.Decimal('100000')
+        elif unit == "mg":
+            final = number/decimal.Decimal('1000000')
+        elif unit == "mcg":
+            final = number/decimal.Decimal('1000000000')
+        elif unit == "tonne":
+            final = number*decimal.Decimal('1000')
+        elif unit == "long":
+            final = number*decimal.Decimal('1016.05')
+        elif unit == "short":
+            final = number*decimal.Decimal('907.185')
+        elif unit == "slug":
+            final = number*decimal.Decimal('14.9539029')
+        elif unit == "stone":
+            final = number*decimal.Decimal('6.35029')
+        elif unit == "lb":
+            final = number*decimal.Decimal('0.453592')
+        elif unit == "oz":
+            final = number*decimal.Decimal('0.0283495')
+        elif unit == "troy":
+            final = number*decimal.Decimal('0.0311034768')
+        elif unit == "grain":
+            final = number*decimal.Decimal('6.479891E-5')
+        elif unit==False:
+            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a unit of mass.".format(raw_unit))]
+            return error_list
+        else:
+            final = number
+        string = str(final) + " kg"
+        item.set_value(string)
+    return error_list
+    
+def do_norm_temperature(item, rule, type_rule):
+    error_list = []
+    flag, number, raw_unit = split_number_unit(item.value())
+    if not flag:
+        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a temperature.".format(str(item.value())))]
+    else:
+        unit = find_unit(raw_unit.lower(), type_rule)
+        if unit == "k":
+            final = number
+        elif unit == "f":
+            decimal.getcontext().prec = 6
+            final = decimal.Decimal(5.0/9.0)*( number+decimal.Decimal('459.67') )
+            decimal.getcontext().prec = 28
+        elif unit == "c":
+            final = number + decimal.Decimal('273.15')           
+        elif unit==False:
+            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a unit of temperature.".format(raw_unit))]
+            return error_list
+        else:
+            final = number
+        string = str(final) + " K"
+        item.set_value(string)
+    return error_list
+
+def do_norm_luminous_intensity(item, rule, type_rule):
+    error_list = []
+    flag, number, raw_unit = split_number_unit(item.value())
+    if not flag:
+        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a luminous intensity.".format(str(item.value())))]
+    else:
+        unit = find_unit(raw_unit.lower(), type_rule)
+        if unit == "cd":
+            final = number
+        elif unit==False:
+            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a unit of luminous intensity.".format(raw_unit))]
+            return error_list
+        else:
+            final = number
+        string = str(final) + " cd"
+        item.set_value(string)
+    return error_list
+
+def do_norm_current(item, rule, type_rule):
+    error_list = []
+    flag, number, raw_unit = split_number_unit(item.value())
+    if not flag:
+        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as an electrical current value.".format(str(item.value())))]
+    else:
+        unit = find_unit(raw_unit.lower(), type_rule)
+        if unit == "a":
+            final = number
+        elif unit == "ma":
+            final = number/decimal.Decimal('1000')           
+        elif unit==False:
+            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a unit of electrical current.".format(raw_unit))]
+            return error_list
+        else:
+            final = number
+        string = str(final) + " A"
+        item.set_value(string)
+    return error_list
+    
+def do_norm_voltage(item, rule, type_rule):
+    error_list = []
+    flag, number, raw_unit = split_number_unit(item.value())
+    if not flag:
+        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a voltage level.".format(str(item.value())))]
+    else:
+        unit = find_unit(raw_unit.lower(), type_rule)
+        if raw_unit.lower()=="mv":
+            unit = "millivolt"
+        if raw_unit=="MV":
+            unit = "megavolt"
+        if unit == "v":
+            final = number
+        elif unit == "microvolt":
+            final = number/decimal.Decimal('1000000')           
+        elif unit == "millivolt":
+            final = number/decimal.Decimal('1000')           
+        elif unit == "kilovolt":
+            final = number*decimal.Decimal('1000')           
+        elif unit == "megavolt":
+            final = number*decimal.Decimal('1000000')           
+        elif unit==False:
+            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a unit of voltage.".format(raw_unit))]
+            return error_list
+        else:
+            final = number
+        string = str(final) + " V"
+        item.set_value(string)
+    return error_list
+
+def do_norm_frequency(item, rule, type_rule):
+    error_list = []
+    flag, number, raw_unit = split_number_unit(item.value())
+    if not flag:
+        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as an frequency value.".format(str(item.value())))]
+    else:
+        unit = find_unit(raw_unit.lower(), type_rule)
+        if unit == "hz":
+            final = number
+        elif unit == "khz":
+            final = number*decimal.Decimal('1000')           
+        elif unit == "mhz":
+            final = number*decimal.Decimal('1000000')           
+        elif unit == "ghz":
+            final = number*decimal.Decimal('1000000000')           
+        elif unit == "invert_s":
+            if number!=0:
+                final = decimal.Decimal(1.0)/number           
+            else:
+                error_list = [("[error]", "doc", item.seq(), "error: a frequency with a period of zero (0) is infinite.".format(raw_unit))]
+                return error_list
+        elif unit == "invert_ms":
+            if number!=0:
+                final = decimal.Decimal(1000.0)/number           
+            else:
+                error_list = [("[error]", "doc", item.seq(), "error: a frequency with a period of zero (0) is infinite.".format(raw_unit))]
+                return error_list
+        elif unit==False:
+            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a unit of frequency.".format(raw_unit))]
+            return error_list
+        else:
+            final = number
+        string = str(final) + " Hz"
+        item.set_value(string)
+    return error_list
+
+def do_norm_boolean(item, rule, type_rule):
+    error_list = []
+    result = None
+    if item.value() is not None:
+        value = unicode(item.value().lower())
+        true_words = type_rule["unit", "true"].list_values("*")
+        false_words = type_rule["unit", "false"].list_values("*")
+        if value in true_words:
+            result = "true"
+        elif value in false_words:
+            result = "false"
+        else:
+            error_list.append( ("[error]", "doc", item.seq(), "unable to determine if '{}' is true or false.".format(item.value())) )
+    if result:
+        item.set_value(result)
+    return error_list
+
+def do_norm_integer(item, rule, type_rule):
+    error_list = []
+    result = None
+    if item.value() is not None:
+        value = item.value().strip()
+        try:
+            number = decimal.Decimal(value)
+            if "." in str(number):
+                number = number.quantize(decimal.Decimal('1'))
+                error_list.append( ("[warning]", "doc", item.seq(), "trimming off fractional part of number.".format(item.value())) )
+            item.set_value(str(number))
+        except Exception, e:
+            error_list.append( ("[error]", "doc", item.seq(), "unable to convert '{}' into an integer. msg: {}".format(item.value(), str(e))) )
+    return error_list
+
+def do_norm_float(item, rule, type_rule):
+    error_list = []
+    result = None
+    if item.value() is not None:
+        value = item.value().strip()
+        try:
+            number = decimal.Decimal(value)
+            string = sci_str(number)
+            item.set_value(string)
+        except Exception, e:
+            error_list.append( ("[error]", "doc", item.seq(), "unable to convert '{}' into a floating point number. msg: {}".format(item.value(), str(e))) )
+    return error_list
+
+def sci_str(dec):
+    return ('{:.' + str(len(dec.as_tuple().digits) - 1) + 'e}').format(dec)
     
 def find_unit(target, rule):
+    if not target:
+        return None
     for unit_label in rule.list_values("unit"):
         if target in rule["unit", unit_label].list_values("*"):
             return unit_label
     return False
     
-def split_number_unit(string):
+def split_number_unit(string, strip_list=None):
     ''' 
         takes a string and grabs the leading number and the following unit 
         both the number and unit returned are simple strings
@@ -586,6 +625,8 @@ def split_number_unit(string):
     if string is None:
         return (False, "", "")
     string = string.strip()
+    if not strip_list:
+        strip_list = []
     if len(string):
         if string[0]=="-":
             negate_flag = True
@@ -598,6 +639,8 @@ def split_number_unit(string):
             if state==0:  # number state
                 if char in ['0','1','2','3','4','5','6','7','8','9']:
                     number_so_far += char
+                elif char in strip_list:
+                    pass
                 elif char==".":
                     if decimal_found:
                         successFlag = False # units do not begin with a period. ex: 234.2.anything 
@@ -613,6 +656,8 @@ def split_number_unit(string):
             elif state==1: # unit state
                 if char=="\n":
                     state=2
+                elif char in strip_list:
+                    pass
                 else:
                     unit_so_far += char
             else: # discard state
