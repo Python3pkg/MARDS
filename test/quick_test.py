@@ -11,7 +11,7 @@ import MARDS
 doc = '''
 #!MARDS_en_1.0
 
-blink zippy_boing!
+blink "zippy_b.oing"
     abc
         joex 44
 item "broom"
@@ -20,6 +20,7 @@ item "broom"
         intensity 33%
 item "brush"
     size 2
+zed 14.32K
 '''
 
 schema = '''
@@ -38,6 +39,9 @@ template abc
     name joex
         required
     name joey
+name zed
+    value
+        type length
 name item
     treatment unique
     value

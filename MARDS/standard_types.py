@@ -7,6 +7,7 @@
 from rolne import rolne
 import regex
 import unicodedata
+import decimal
 from mards_library import SCHEMA_to_rolne
 
 standard_types = '''\
@@ -502,25 +503,132 @@ def get_item_rule(item, schema):
     
 def do_normalization(item, rule, schema):
     value_type = rule.value()
+    type_rule = schema.find("define_type", value_type)
     if value_type=="label":
-        error_list = do_norm_label(item, rule, schema)
+        error_list = do_norm_label(item, rule, type_rule)
+    elif value_type=="length":
+        error_list = do_norm_length(item, rule, type_rule)
     else:
         # TODO: allow/search for user-defined types
         error_list = [ ("schema", rule.seq(), "'type {}' unknown.".format(value_type)) ]
     return error_list
     
-punctuation_search = regex.compile(ur"\p{P}+", re.UNICODE);
-    
-def do_norm_label(item, rule, schema):
-    global punctuation_search
+label_search = regex.compile(ur"[\p{Z}\p{P}](?<!_)(?<!\.)", regex.UNICODE)
+
+def do_norm_label(item, rule, type_rule):
+    global label_search
     error_list = []
-    print "workin on a label"
     value = unicode(item.value())
     #TODO check for required?
     if value is not None:
-        print "jj", value
-        if punctuation_search.search(value):
-            pass
-        else:
-            error_list = [("doc", item.seq(), "'{} {}' has characters not permitted.".format(item.name(), value))]
+        r = label_search.search(value)
+        if r:
+            error_list = [("doc", item.seq(), "'{} {}' has characters not permitted. Detail: '{}'".format(item.name(), value, str(r)))]
     return error_list
+    
+def do_norm_length(item, rule, type_rule):
+    error_list = []
+    flag, number, raw_unit = split_number_unit(item.value())
+    if not flag:
+        error_list = [("doc", item.seq(), "unable to interpret '{}' as a length.".format(str(item.value())))]
+    else:
+        unit = find_unit(raw_unit.lower(), type_rule)
+        if (unit == "in"):
+            final = number*decimal.Decimal('0.0254')
+        elif (unit == "ft"):
+            final = number*decimal.Decimal('0.3048')
+        elif (unit == "yd"):
+            final = number*decimal.Decimal('0.9114')
+        elif (unit=="mi"):
+            final = number*decimal.Decimal('1609.34')
+        elif (unit == "km"):
+            final = number*decimal.Decimal('1000')
+        elif unit == "hm":
+            final = number*decimal.Decimal('100')
+        elif unit == "dam":
+            final = number*decimal.Decimal('10')
+        elif (unit == "m"):
+            final = number
+        elif unit == "dm":
+            final = number*decimal.Decimal('0.1')
+        elif unit == "cm":
+            final = number*decimal.Decimal('0.01')
+        elif unit == "mm":
+            final = number*decimal.Decimal('0.001')
+        elif unit == False:
+            error_list = [("doc", item.seq(), "unable to interpret '{}' as a length unit.".format(raw_unit))]
+            return error_list
+        else:
+            final = number
+        string = str(final)+" m"
+        item.set_value(string)
+    return error_list
+    
+def find_unit(target, rule):
+    for unit_label in rule.list_values("unit"):
+        if target in rule["unit", unit_label].list_values("*"):
+            return unit_label
+    return False
+    
+def split_number_unit(string):
+    ''' 
+        takes a string and grabs the leading number and the following unit 
+        both the number and unit returned are simple strings
+        returns a triple tuple of (successFlag, number, unit)
+        successFlag is False if the number is invalid
+    '''
+    successFlag = True
+    state = 0
+    number_so_far = ""
+    unit_so_far = ""
+    decimal_found = False
+    negate_flag = False
+    if string is None:
+        return (False, "", "")
+    string = string.strip()
+    if len(string):
+        if string[0]=="-":
+            negate_flag = True
+            string = string[1:]
+    if len(string):
+        if string[0]==".":
+            string = "0"+string  # a string of ".12" is actually a legit number, but the lack of a preceding 0 will confuse python, so we tack on a zero
+    if len(string):
+        for char in string:
+            if state==0:  # number state
+                if char in ['0','1','2','3','4','5','6','7','8','9']:
+                    number_so_far += char
+                elif char==".":
+                    if decimal_found:
+                        successFlag = False # units do not begin with a period. ex: 234.2.anything 
+                        state=2
+                    else:
+                        number_so_far += char
+                        decimal_found = True
+                elif char=="\n":
+                    state=2
+                else:
+                    unit_so_far += char
+                    state=1
+            elif state==1: # unit state
+                if char=="\n":
+                    state=2
+                else:
+                    unit_so_far += char
+            else: # discard state
+                pass
+        # clean up 
+        unit_so_far = unit_so_far.strip()
+        if len(number_so_far)==0:
+            successFlag = False
+        if negate_flag:
+            number_so_far = "-"+number_so_far
+        try:
+            number_so_far = decimal.Decimal(number_so_far)
+        except:
+            successFlag = False
+    else:
+        successFlag = False
+    if not successFlag:
+        return(successFlag, "", unit_so_far)
+    return (successFlag, number_so_far, unit_so_far)
