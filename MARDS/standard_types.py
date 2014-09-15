@@ -18,21 +18,26 @@ if e:
     
 def apply_schema_types(doc, schema):
     global standard_type_rolne
-    error_list = []
     copy = schema.copy(seq_prefix="", seq_suffix="")
-    copy.extend(standard_type_rolne)
-    #
-    # EXAMINE EACH NAME/VALUE PAIR
-    #
+    copy.extend(standard_type_rolne, prefix="std_type.")
+    return _apply_schema_types(doc, schema, copy)
+
+def _apply_schema_types(doc, schema, extended):
+    error_list = []
     for item in doc:
         rule = get_item_rule(item, schema)
         if rule:
             if rule.find("value"):
                 if rule.find("value").list_names("type"):
-                    e = do_normalization(item, rule["value"]["type"], copy)
+                    e = do_normalization(item, rule["value"]["type"], extended)
                     error_list.extend(e)
-    return doc, error_list
-
+            if len(item):
+                el = _apply_schema_types(item, rule, extended)
+                error_list += el
+    return error_list
+    
+    
+    
 # TODO : add to rolne support for .exist(name ...)
 #    the problem with .find(name ...) is if the subtending rolne is empty, it
 #    resolves as False. (In python, both None and <empty_rolne> are False.)
@@ -54,8 +59,9 @@ def get_item_rule(item, schema):
 def do_normalization(item, rule, schema):
     value_type = rule.value()
     type_rule = schema.find("define_type", value_type)
+    error_list = []
     if  value_type=="string":
-        error_list = [] ## nothing to do for a string type
+        pass ## nothing to do for a string type
     elif value_type=="label":
         error_list = do_norm_label(item, rule, type_rule)
     elif value_type=="price":
@@ -69,10 +75,9 @@ def do_normalization(item, rule, schema):
     elif value_type=="radio_select":
         error_list = do_norm_radio_select(item, rule, type_rule)
     elif value_type=="ignore":
-        error_list = []
         item.set_value(None)
     elif value_type=="unit":
-        error_list = [] ## nothing to do for a unit type
+        pass ## nothing to do for a unit type
     elif value_type=="angle":
         error_list = do_norm_angle(item, rule, type_rule)
     elif value_type=="file":
@@ -102,12 +107,17 @@ def do_normalization(item, rule, schema):
         error_list = do_norm_integer(item, rule, type_rule)
     elif value_type=="float":
         error_list = do_norm_float(item, rule, type_rule)
+    elif value_type=="hexadecimal":
+        error_list = do_norm_hexadecimal(item, rule, type_rule)
     else:
         # TODO: allow/search for user-defined types
-        error_list = [ ("[error]", "schema", rule.seq(), "'type {}' unknown.".format(value_type)) ]
+        if type_rule is not None:
+            pass ## nothing to do as it is user defined
+        else:
+            error_list = [ ("[error]", "schema", rule.seq(), "'type {}' unknown.".format(value_type)) ]
     return error_list
     
-label_search = regex.compile(ur"[\p{Z}\p{P}^](?<!_)(?<!\.)", regex.UNICODE)
+label_search = regex.compile(ur"[\p{Z}\p{P}^](?<!_)(?<!\.)(?<!\*)", regex.UNICODE)
 
 def do_norm_label(item, rule, type_rule):
     global label_search
@@ -596,6 +606,22 @@ def do_norm_float(item, rule, type_rule):
             item.set_value(string)
         except Exception, e:
             error_list.append( ("[error]", "doc", item.seq(), "unable to convert '{}' into a floating point number. msg: {}".format(item.value(), str(e))) )
+    return error_list
+
+def do_norm_hexadecimal(item, rule, type_rule):
+    error_list = []
+    string = str(item.value()).lower()
+    if item.value() is not None:
+        bad_chars = ""
+        final = ""
+        for ch in string:
+            if ch in ['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f']:
+                final += ch
+            else:
+                bad_chars += ch
+        if bad_chars:
+            error_list = [("[warning]", "doc", item.seq(), "'{} {}' has characters not permitted: '{}'".format(item.name(), item.value(), ", ".join(bad_chars)))]
+        item.set_value(final)
     return error_list
 
 def sci_str(dec):

@@ -13,12 +13,13 @@ doc = '''
 #!MARDS_en_1.0
 
 blink "zippy_b.oing"
-    abc
-        joex 44
+    abc beep beep 
+        joex 44ft
 item "broom"
     size 33
     color blue
         intensity 33%
+        intensity 2
 item "brush"
     size 2
 zed 1.234e+2
@@ -30,6 +31,8 @@ schema = '''
 ##    import sub
 ##        local "sub.MARDS-schema"
 
+define_type jed
+
 name blink
     value
         type label
@@ -37,8 +40,13 @@ name blink
     name rate
     insert abc
 template abc
+    value
+        type jed
+        required
     name joex
         required
+        value
+            type length
     name joey
 name zed
     value
@@ -50,9 +58,18 @@ name item
         required
     name size
         treatment one
+        value
+            type mass
     name color
         treatment unique
+        value
+            type radio_select
+                choice "blue"
+                choice "red"
+                choice "yellow"
         name intensity
+            value
+                type percent
     name title
         required
         treatment concat

@@ -485,4 +485,8 @@ define_type float
         title "Float (Decimal Number)"
         body "A real number in specified by IEEE 754. It is normalized to standard scientific notation as commonly found in computers. For example, 123.4 is represented as `1.234e+2`."
 
+define_type hexadecimal
+    describe en
+        title "Hexadecimal Sequence"
+        body "A series of hexadecimal digits. Each digit is either a numeric digit (0 to 9) or a latin character of either 'a', 'b', 'c', 'd', 'e', or 'f'. All other characters are ignored and removed."
 '''

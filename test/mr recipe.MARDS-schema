@@ -21,7 +21,7 @@ name id
     required
     treatment one
     value
-        type hexcode
+        type hexadecimal
         required
 ## #########################
 ##
@@ -38,7 +38,7 @@ name maker
     name __origin_id
         treatment one
         value
-            type hexcode
+            type hexadecimal
     name version
         treatment one
         required
@@ -48,7 +48,7 @@ name maker
     name company_id
         treatment one
         value
-            type hexcode
+            type hexadecimal
             required
     name company_name
         treatment one
@@ -68,7 +68,7 @@ name parameter
     name __origin_id
         treatment one
         value
-            type hexcode
+            type hexadecimal
     name version
         treatment one
         required
@@ -103,7 +103,7 @@ name workstep
     name __origin_id
         treatment one
         value
-            type hexcode
+            type hexadecimal
     name version
         treatment one
         required
@@ -123,7 +123,7 @@ name workstep
         treatment one
         required
         value
-            type currency
+            type price
             required
             default 0
     name input
@@ -195,7 +195,7 @@ name part
     name __origin_id
         treatment one
         value
-            type hexcode
+            type hexadecimal
     name version
         treatment one
         required
@@ -215,7 +215,7 @@ name part
         treatment one
         required
         value
-            type currency
+            type price
             required
             default 0
     name sku_source

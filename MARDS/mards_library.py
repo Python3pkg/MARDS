@@ -478,7 +478,7 @@ def schema_rolne_check(doc, schema):
     #
     # PASS FOUR: TYPE CHECKS AND NORMALIZATION
     #
-    doc, el = st.apply_schema_types(doc, schema)
+    el = st.apply_schema_types(doc, schema)
     error_list.extend(el)
     #
     return doc, error_list
