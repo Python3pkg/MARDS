@@ -1,0 +1,24 @@
+#!MARDS_schema_en_1.0 assembly_grammar_0.2
+
+## #######################
+##
+## Worksteps
+##
+## #######################
+template printing_workstep_grammar
+    search function
+        match 'bw_laser_print'
+            extend bw_laser_print
+
+template bw_laser_print
+    describe en 
+        title "print black/white on paper"   
+    name print_file
+        value
+            required
+            type file
+    name paper
+        value
+            type string
+            describe en
+                title "description of paper to use"   

@@ -1,0 +1,72 @@
+#!MARDS_schema_en_1.0 laser_cutting_grammar_0.2
+
+## #######################
+##
+## Worksteps
+##
+## #######################
+template laser_cutting_workstep_grammar
+    search function
+        match 'vector_cut'
+            extend vector_cut
+        match 'vector_engrave'
+            extend vector_engrave
+        match 'raster_engrave'
+            extend raster_engrave
+
+template vector_cut
+    describe en 
+        title "laser cut part(s) from flatstock"   
+    name part_file
+        value
+            required
+            type file
+    name reference_file
+        value
+            type file
+            describe en
+                title "configuration parameters for the laser"
+ 
+template vector_engrave
+    describe en 
+        title "laser engrave part(s)"   
+    name part_file
+        value
+            required
+            type file
+    name reference_file
+        value
+            type file
+    name xpos
+        value 
+            type integer
+    name ypos
+        value 
+            type integer
+    name font_file
+        value
+            type file
+    name engravestring
+        value 
+            type string
+                
+template raster_engrave
+    describe en 
+        title "laser engrave part(s)"   
+    name part_file
+        value
+            required
+            type file
+    name reference_file
+        value
+            type file
+    name xpos
+        value 
+            type integer
+    name ypos
+        value 
+            type integer
+    name image
+        value 
+            type file
+

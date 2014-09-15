@@ -1,0 +1,15 @@
+#!MARDS_schema_en_1.0 assembly_grammar_0.2
+
+## #######################
+##
+## Worksteps
+##
+## #######################
+template assembly_workstep_grammar
+    search function
+        match 'workbench'
+            extend workbench
+
+template workbench
+    describe en
+        title "assemble parts into higher level assembly"

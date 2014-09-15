@@ -1,0 +1,64 @@
+#!MARDS_schema_en_1.0 woodworking_grammar_0.2
+    import woodworking_grammar
+        local
+    import laser_cutting_grammar
+        local
+    import shipping_grammar
+        local
+    import assembly_grammar
+        local
+    import printing_grammar
+        local
+
+
+    describe en
+        title "Grammer for Worksteps"
+
+template workstep_grammar
+    search industry
+        match 'woodworking' 
+            extend woodworking_workstep_grammar
+                from woodworking_grammar
+        match 'laser_cutting'
+            extend laser_cutting_workstep_grammar
+                from laser_cutting_grammar
+        match 'printing'
+            extend printing_workstep_grammar
+                from printing_grammar
+        match 'assembly'    
+            extend assembly_workstep_grammar
+                from assembly_grammar
+
+template parts_grammar
+    search label
+        match 'lumber'
+            extend lumber
+        match 'wood_panel' 
+            extend wood_panel
+        match 'from_distributor'
+            extend from_distributor
+        match 'open'
+            extend open
+
+    
+
+template from_distributor
+    describe en 
+        title "Part ordered from a vendor with no additional processing required"
+    name part_number
+        required
+        value
+            type string
+    name distributor
+        required
+        value
+            type string
+    name part_url
+        value
+            type string
+
+template open
+    describe en 
+        title "this page intentionally left blank"
+                
+

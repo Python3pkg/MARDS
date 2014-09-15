@@ -1,17 +1,103 @@
-#!MARDS_schema_en_1.0 part_grammer_0.2
-    describe en
-        title "Grammer for Parts"
+#!MARDS_schema_en_1.0 woodworking_grammar_0.2
 
-template parts_grammer
-    search label
-        match 'lumber'
-            extend lumber
-        match 'wood_panel' 
-            extend wood_panel
-        match 'from_distributor'
-            extend from_distributor
-        match 'open'
-            extend open
+## #######################
+##
+## Worksteps
+##
+## #######################
+template woodworking_workstep_grammar
+    search function
+        match 'cut_board'
+            extend cut_board
+        match 'cnc_part'
+            extend small_carve
+        match 'cut_panel'
+            extend cut_panel
+        match 'cnc_panel'
+            extend cnc_panel
+        match 'glue_assembly'
+            extend glue_assembly
+        match 'sand_part'
+            extend sand_part
+        match 'surface_finish'
+            extend woodworking.surface_finish
+
+template cut_board
+    describe en 
+        title "cut a board to specified dimensions"
+    name length
+        value
+            required
+            type length
+        describe en
+            title "length of the board in axis of primary grain"
+    name width
+        value
+            required
+            type length
+
+template small_carve
+    describe en 
+        title "CNC surfacing of 3D model"   
+    name part_file
+        value
+            required
+            type file
+
+template cut_panel
+    describe en 
+        title "cut parts from panel flatstock"   
+    name length
+        value
+            required
+            type length
+    name width
+        value
+            required
+            type length
+
+template cnc_panel
+    describe en 
+        title "CNC cut parts from panel flatstock"  
+    name part_file
+        value
+            required
+            type file
+
+template glue_assembly
+    describe en 
+        title "assemble parts with adhesive and timed curing"     
+    name adhesive
+        value
+            type string
+    name dry_time
+        value
+            type duration
+
+template sand_part
+    name abrasive
+        value
+            required
+            type string
+
+template woodworking.surface_finish
+    describe en 
+        title "apply surface finish and timed drying"     
+    name finishing_agent
+        value
+            required
+            type string
+    name dry_time
+        value
+            required
+            type duration
+
+## #######################
+##
+## Parts
+##
+## #######################
+
 
 template lumber
     name thickness
@@ -150,21 +236,3 @@ template wood_panel
                 choice MDF
                 choice layer
 
-template from_distributor
-    describe en 
-        title "Part ordered from a vendor with no additional processing required"
-    name part_number
-        required
-        value
-            type string
-    name distributor
-        required
-        value
-            type string
-    name part_url
-        value
-            type string
-
-template open
-    describe en 
-        title "this page intentionally left blank"

@@ -1,9 +1,7 @@
 #!MARDS_schema_en_1.0 maker_redux_recipe_0.2
     describe en
         title "Maker Redux Recipe Format v1.0"
-    import workstep_grammer
-        local
-    import part_grammer
+    import industry_grammar
         local
 
 ## #########################
@@ -130,6 +128,14 @@ name workstep
         value
             type label
             required
+        name qty
+            treatment one
+            required
+            value
+                type integer
+                    min 1
+                required
+                default 1
     name output
         value
             type label
@@ -180,8 +186,8 @@ name workstep
         value
             type label
             required
-    extend workstep_grammer
-        from workstep_grammer_doc
+    extend workstep_grammar
+        from industry_grammar
 ## #########################
 ##
 ##   PART
@@ -241,5 +247,5 @@ name part
         value
             type label
             required
-    extend parts_grammer
-        from part_grammer_doc
+    extend parts_grammar
+        from industry_grammar
