@@ -2,3 +2,6 @@
 setup.py
 MARDS\__init__.py
 MARDS\mards_library.py
+MARDS\standard_types.py
+MARDS\standard_types_schema.py
+test\test_triggers.py
