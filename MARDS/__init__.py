@@ -2,7 +2,7 @@
 #
 # MARDS data serialization library
 #
-# Version 0.1.0
+# Version 0.1.2
 
 from rolne import rolne
 
