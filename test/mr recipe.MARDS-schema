@@ -77,7 +77,7 @@ name parameter
         treatment sum
     name type
         treatment one
-        required
+        required  
         value
             type label
             required
