@@ -40,6 +40,7 @@ def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False, key_o
                 else:
                     t = (context, ctr, "tab stop jumped ahead too far")
                     error_list.append(t)
+                    break
                 index = pointer_list[indent].append_index(key, value, seq=prefix+str(ctr))
                 last_spot = pointer_list[indent][key, value, index]
                 last_nvi[indent]=(key, value, index)
