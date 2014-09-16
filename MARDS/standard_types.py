@@ -8,7 +8,7 @@ from rolne import rolne
 import regex
 import decimal
 import math
-from mards_library import SCHEMA_to_rolne
+from mards_library import SCHEMA_to_rolne, schema_match_up
 from standard_types_schema import standard_types_text
 
 
@@ -22,7 +22,8 @@ def apply_schema_types(doc, schema):
     copy.extend(standard_type_rolne, prefix="std_type.")
     return _apply_schema_types(doc, schema, copy)
 
-def _apply_schema_types(doc, schema, extended):
+def _apply_schema_types(doc, orig_schema, extended):
+    schema = schema_match_up(doc, orig_schema)
     error_list = []
     for item in doc:
         rule = get_item_rule(item, schema)

@@ -19,7 +19,9 @@ template abc
         value
             type length
     name joey
-    extend xx
+    search joey
+        match "zed"
+            extend xx
 name zed
     value
         type float

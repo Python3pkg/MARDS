@@ -13,9 +13,11 @@ doc = '''
 #!MARDS_en_1.0
 
 blink "zippy_b.oing"
+    rate 23
     abc beep beep 
         joex 44ft
-        joeBxx 9 inches
+        joey zed
+        joeBxx 5 inches
 item "broom"
     size 33
     color blue

@@ -464,6 +464,7 @@ def schema_rolne_check(doc, schema):
         if schema["#!MARDS_schema_en_1.0"].value("exclusive")=="false":
             exclusive_flag = False
     if exclusive_flag:
+        # print "jj", schema
         el = check_schema_coverage(doc, schema)
         error_list.extend(el)
     #
