@@ -1,5 +1,6 @@
-MARDS_schema_en_1.0 resolv.conf_1.0
-    describe
+#!MARDS_schema_en_1.0 resolv.conf_1.0
+
+    describe en
         title "Linux /etc/resolv.conf v1.0"
         body "The resolver is a set of routines in the C library that provide"
         body "access to the Internet Domain Name System (DNS). The resolver"
@@ -19,7 +20,7 @@ name nameserver
     value
         required
         type string
-    describe
+    describe en
         title "Internet Address of a Name Server"
         body "Internet address of a name server that the resolver should query,"
         body "either an IPv4 address (in dot notation), or an IPv6 address in"
@@ -47,7 +48,7 @@ name domain
     value
         required
         type domain_name
-    describe
+    describe en
         title "Local Domain Name"
         body "Most queries for names within this domain can use short names relative"
         body "to the local domain. If no domain entry is present, the domain is"
@@ -63,7 +64,7 @@ name search
     value
         required
         type domain-name
-    describe
+    describe en
         title "Search List for Host-Name Lookup"
         body "The search list is normally determined from the local domain name; by default, it contains only the local domain name. This may be changed by listing the desired domain search path following the search keyword with spaces or tabs separating the names. Resolver queries having fewer than ndots dots (default is 1) in them will be attempted using each component of the search path in turn until a match is found. For environments with multiple subdomains please read options ndots:n below to avoid man-in-the-middle attacks and unnecessary traffic for the root-dns-servers. Note that this process may be slow and will generate a lot of network traffic if the servers for the listed domains are not local, and that queries will time out if no server is available for one of the domains.
         body ""
@@ -73,7 +74,7 @@ name search
 
 name sortlist
     treatment one
-    describe
+    describe en
         title "Sort Results"
         body "This option allows addresses returned by gethostbyname(3) to be sorted. A sortlist is specified by IP-address-netmask pairs. The netmask is optional and defaults to the natural netmask of the net. The IP address and optional network pairs are separated by slashes. Up to 10 pairs may be specified. Here is an example:"
         body ""
@@ -100,7 +101,7 @@ name options
             choice "edns0"
             choice "single-request"
             choice "single-request-reopen"
-    describe
+    describe en
         title "Options List"
         body "The format is:"
         body ""
@@ -139,7 +140,7 @@ name options
         body " *  `__ip6-bytestring__`"
         body "    _(since glibc 2.3.4)_ "
         body ""
-        body "    sets RES_USE_BSTRING in \_res.options. This causes reverse IPv6 lookups to be made using the bit-label format described in RFC 2673; if this option is not set, then nibble format is used."
+        body "    sets RES_USE_BSTRING in \_res.options. This causes reverse IPv6 lookups to be made using the bit-label format describe end in RFC 2673; if this option is not set, then nibble format is used."
         body ""
         body " *  `__ip6-dotint__`"
         body "    `__no-ip6-dotint__`"
@@ -150,7 +151,7 @@ name options
         body " *  `__edns0__`"
         body "    _(since glibc 2.6)_ "
         body ""
-        body "    sets RES_USE_EDNSO in \_res.options. This enables support for the DNS extensions described in RFC 2671."
+        body "    sets RES_USE_EDNSO in \_res.options. This enables support for the DNS extensions describe end in RFC 2671."
         body ""
         body " *  `__single-request__`"
         body "    _(since glibc 2.10)_"
@@ -166,7 +167,7 @@ name options
 ignore
     prefix "#"
     prefix ";"
-    describe
+    describe en
         title "Comments"
         body ""
         body "Lines that contain a semicolon (;) or hash character (#) in the first column are treated as comments."
