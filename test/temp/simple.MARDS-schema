@@ -1,0 +1,51 @@
+#!MARDS_schema_en_1.0 blah
+    import sub
+        local
+        
+define_type jed
+
+name blink
+    value
+        type label
+        required
+    name rate
+    insert abc
+template abc
+    value
+        type jed
+        required
+    name joex
+        required
+        value
+            type length
+    name joey
+    search joey
+        match "zed"
+            extend xx
+name zed
+    value
+        type float
+name item
+    treatment unique
+    value
+        type label
+        required
+    name size
+        treatment one
+        value
+            type mass
+    name color
+        treatment unique
+        value
+            type radio_select
+                choice "blue"
+                choice "red"
+                choice "yellow"
+        name intensity
+            value
+                type percent
+    name title
+        required
+        treatment concat
+        value
+            default "unknown"
