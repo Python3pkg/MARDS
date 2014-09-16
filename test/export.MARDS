@@ -31,7 +31,7 @@ part plywood_birch_panel
     version 0.1 mr
     label wood_panel
     top_surface birch
-    core mdf
+    core MDF
     top_quality fine
     bottom_quality medium
     thickness 8.6mm
@@ -212,7 +212,7 @@ workstep package
     version 0.1 mr
     industry shipping 
     function package
-    fill "starch peanuts"
+    fill starch_peanuts
     typical_cost $1.50
     input box
     input assemble

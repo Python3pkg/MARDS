@@ -87,7 +87,6 @@ name options
     value
         required
         type check_list
-            separator space
             choice "debug"
             prefix "ndots:"
             prefix "timeout:"
