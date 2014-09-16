@@ -7,4 +7,6 @@ template xx
     name joeAxx
         required
     name joeBxx
+        value
+            type length
     

@@ -9,10 +9,10 @@ import regex
 import decimal
 import math
 from mards_library import SCHEMA_to_rolne
-from standard_types_schema import standard_types
+from standard_types_schema import standard_types_text
 
 
-standard_type_rolne, e = SCHEMA_to_rolne(standard_types)
+standard_type_rolne, e = SCHEMA_to_rolne(standard_types_text)
 if e:
     print "standard_library errors: "+repr(e)
     

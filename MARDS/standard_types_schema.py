@@ -4,9 +4,7 @@
 # THE STANDARD TYPES SCHEMA DOCUMENT
 #
 
-standard_types = '''\
-#!MARDS_schema_en_1.0
-
+standard_types_text = '''\
 define_type string
     describe en
         title "String (UTF8)"

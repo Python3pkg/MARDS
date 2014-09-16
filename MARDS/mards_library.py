@@ -5,28 +5,27 @@
 #
 
 from rolne import rolne
-import standard_types as st
 
-def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False, key_open=False, prefix=""):
+def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False, key_open=False, prefix="", schema_dir=None, suppress_schema=False):
     result = rolne()
     error_list = []
     if doc is None:
         return result, error_list
-    if schema:
-        schema, schema_errors = SCHEMA_to_rolne(schema)
+    if suppress_schema:
+        schema = rolne()
+    else:
+        schema, schema_errors = SCHEMA_to_rolne(schema, prefix="", schema_dir=schema_dir)
         error_list.extend(schema_errors)
     current = 0
     tab_list = [0]
     pointer_list = range(50)
     pointer_list[0]=result
     last_spot = pointer_list[0]
-    #line_tracker = []
     last_nvi = range(50)
     for ctr, line in enumerate(doc.split("\n")):
-        #line_tracker.append([])
         (indent, key, value, error) = parse_line(line, tab_list, tab_strict=tab_strict, key_open=key_open)
         if error:
-            t = (context, ctr, error)
+            t = ("[error]", context, ctr, error)
             error_list.append(t)
         else:
             if key:
@@ -38,14 +37,13 @@ def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False, key_o
                     pointer_list[indent] = last_spot
                     current = indent
                 else:
-                    t = (context, ctr, "tab stop jumped ahead too far")
+                    t = ("[error]", context, ctr, "tab stop jumped ahead too far")
                     error_list.append(t)
+                    break
                 index = pointer_list[indent].append_index(key, value, seq=prefix+str(ctr))
                 last_spot = pointer_list[indent][key, value, index]
                 last_nvi[indent]=(key, value, index)
-                #for r in range(indent+1):
-                #    line_tracker[ctr].append(last_nvi[r])
-    if schema:
+    if not suppress_schema:
         result, schema_errors = schema_rolne_check(result, schema)
         error_list.extend(schema_errors)
     return result, error_list
@@ -225,11 +223,11 @@ def value_output(value, quote_method='all', none_handle='strict'):
     return
 
     
-def SCHEMA_to_rolne(doc=None, prefix=""):
+def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
     ################################
     # CONVERT TO A ROLNE
     ################################
-    schema, error_list = MARDS_to_rolne(doc, context="schema", tab_strict=True, key_open=True, prefix=prefix)
+    schema, error_list = MARDS_to_rolne(doc, context="schema", tab_strict=True, key_open=True, prefix=prefix, suppress_schema=True)
     ################################
     #  FIRST PASS SYNTAX CHECKING
     #
@@ -241,7 +239,7 @@ def SCHEMA_to_rolne(doc=None, prefix=""):
         (en, ev, es) = key
         if en in ["name", "template"]:
             pass
-        elif en in ["#!MARDS_schema_en_1.0", "import", "local"]:
+        elif en in ["#!MARDS_schema_en_1.0", "import", "local", "exclusive"]:
             pass
         elif en in ["##"]:
             schema.seq_delete(es)
@@ -249,15 +247,15 @@ def SCHEMA_to_rolne(doc=None, prefix=""):
             # TODO: check that parent is 'recurse'
             parent_es = schema.seq_parent(es)
             if schema.at_seq(parent_es).name()!='recurse':
-                error_list.append( ("schema", es, "the 'limit' element may only be applied to a 'recurse'") )
+                error_list.append( ("[error]", "schema", es, "the 'limit' element may only be applied to a 'recurse'") )
                 schema.seq_delete(es)
             else:
                 if ev.isdigit():
                     if int(ev)<1 or int(ev)>20:
-                        error_list.append( ("schema", es, "the 'limit' should have a integer value between 1 and 20") )
+                        error_list.append( ("[error]", "schema", es, "the 'limit' should have a integer value between 1 and 20") )
                         schema.seq_delete(es)
                 else:
-                    error_list.append( ("schema", es, "the 'limit' should have a integer value between 1 and 20") )
+                    error_list.append( ("[error]", "schema", es, "the 'limit' should have a integer value between 1 and 20") )
                     schema.seq_delete(es)
         elif en in ["treatment", "value", "required", "default", "ordered"]:
             pass
@@ -272,7 +270,7 @@ def SCHEMA_to_rolne(doc=None, prefix=""):
         elif en in ["define_type", "unit", "*"]:  ## TODO: schema type stuff
             pass
         else:
-            t = ("schema", es, "'{}' not a recognized schema element name".format(en))
+            t = ("[error]", "schema", es, "'{}' not a recognized schema element name".format(en))
             error_list.append(t)
             schema.seq_delete(es)
     #################################
@@ -283,8 +281,8 @@ def SCHEMA_to_rolne(doc=None, prefix=""):
     schema_list = schema.flattened_list(("#!MARDS_schema_en_1.0"), value=True, seq=True)
     for (ev, es) in schema_list:
         header = schema.at_seq(es)
-        import_list = header.flattened_list(("import"), value=True, seq=True)
-        for (iev, ies) in import_list:
+        import_list = header.flattened_list(("import"), name=True, value=True, seq=True)
+        for (ien, iev, ies) in import_list:
             i = header.at_seq(ies)
             if iev:
                 prx = iev+"/"
@@ -298,7 +296,7 @@ def SCHEMA_to_rolne(doc=None, prefix=""):
                     with open(file_loc, 'r') as file:
                         subdata = file.read()
                 except IOError, e: 
-                    error_list.append ( ("schema", ies, str(e)) )
+                    error_list.append ( ("[error]", "schema", ies, str(e)) )
                     subdata = None
                 if subdata:
                     sr,e = SCHEMA_to_rolne(subdata, prefix=prx)
@@ -306,8 +304,8 @@ def SCHEMA_to_rolne(doc=None, prefix=""):
                     # TODO: convince rolne to retain line numbering in sr
                     error_list.extend(e)
             else:
-                error_list.append( ("schema", ies, "unable to locate import for '{}'".format(iev)) )
-        schema.seq_delete(es)  #TODO: verify rolne .seq_delete also deletes children
+                error_list.append( ("[error]", "schema", ies, "unable to locate import method for '{}'".format(iev)) )
+        # schema.seq_delete(es) # <- keep this as the header flags are later used.
     #################################
     #
     # MAKE A COPY AND BUILD INDEX
@@ -350,7 +348,7 @@ def SCHEMA_to_rolne(doc=None, prefix=""):
         for (ev, es) in schema_list:
             if ev in name_seq:
                 if name_seq[ev] is False:
-                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
+                    t = ("[error]", "schema", es, "'name {}' found in schema multiple times".format(ev))
                     error_list.append(t)
                     schema.seq_delete(es)
                 else:
@@ -360,12 +358,12 @@ def SCHEMA_to_rolne(doc=None, prefix=""):
                     new_depth = len(line) 
                     prx = src+".i"+str(new_depth)+"."
                     if name_seq[ev] in line:
-                        error_list.append(("schema", es, "'insert {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
+                        error_list.append(("[error]", "schema", es, "'insert {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
                         schema.seq_delete(es)
                     else:
                         schema.seq_replace(es, copy.ptr_to_seq(src), prx)
             else:
-                t = ("schema", es, "'name {}' not found in schema".format(ev))
+                t = ("[error]", "schema", es, "'name {}' not found in schema".format(ev))
                 error_list.append(t)
                 schema.seq_delete(es)
         schema_list = schema.flattened_list(("insert"), value=True, seq=True)
@@ -381,7 +379,7 @@ def SCHEMA_to_rolne(doc=None, prefix=""):
         for (ev, es) in schema_list:
             if ev in name_seq:
                 if name_seq[ev] is False:
-                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
+                    t = ("[error]", "schema", es, "'name {}' found in schema multiple times".format(ev))
                     error_list.append(t)
                     schema.seq_delete(es)
                 else:
@@ -391,7 +389,7 @@ def SCHEMA_to_rolne(doc=None, prefix=""):
                     new_depth = len(line) 
                     prx = src+".e"+str(new_depth)+"."
                     if name_seq[ev] in line:
-                        error_list.append(("schema", es, "'extend {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
+                        error_list.append(("[error]", "schema", es, "'extend {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
                         schema.seq_delete(es)
                     else:
                         parent = schema.at_seq(schema.seq_parent(es))
@@ -399,7 +397,7 @@ def SCHEMA_to_rolne(doc=None, prefix=""):
                         parent.extend(children, prefix=prx)
                         schema.seq_delete(es)
             else:
-                t = ("schema", es, "'name {}' not found in schema".format(ev))
+                t = ("[error]", "schema", es, "'name {}' not found in schema".format(ev))
                 error_list.append(t)
                 schema.seq_delete(es)
         schema_list = schema.flattened_list(("extend"), value=True, seq=True)
@@ -415,7 +413,7 @@ def SCHEMA_to_rolne(doc=None, prefix=""):
         for (ev, es) in schema_list:
             if ev in name_seq:
                 if name_seq[ev] is False:
-                    t = ("schema", es, "'name {}' found in schema multiple times".format(ev))
+                    t = ("[error]", "schema", es, "'name {}' found in schema multiple times".format(ev))
                     error_list.append(t)
                     schema.seq_delete(es)
                 else:
@@ -434,10 +432,10 @@ def SCHEMA_to_rolne(doc=None, prefix=""):
                         else:
                             schema.seq_delete(es)
                     else:
-                        error_list.append(("schema", es, "'recurse {}' is not recursive".format(ev)))
+                        error_list.append(("[error]", "schema", es, "'recurse {}' is not recursive".format(ev)))
                         schema.seq_delete(es)
             else:
-                t = ("schema", es, "'name {}' not found in schema".format(ev))
+                t = ("[error]", "schema", es, "'name {}' not found in schema".format(ev))
                 error_list.append(t)
                 schema.seq_delete(es)
         schema_list = schema.flattened_list(("recurse"), value=True, seq=True)
@@ -453,6 +451,7 @@ def schema_rolne_check(doc, schema):
     
     returns: clean-up-document, error_list
     '''
+    import standard_types as st
     error_list = []
     #
     # PASS ONE: FORWARD CHECK OF DOC
@@ -460,13 +459,18 @@ def schema_rolne_check(doc, schema):
     # this pass verifies that each entry in the document
     # has a corresponding entry in the schema
     #
-    el = check_schema_coverage(doc, schema)
-    error_list.extend(el)
+    exclusive_flag = True
+    if schema.list_names("#!MARDS_schema_en_1.0"):
+        if schema["#!MARDS_schema_en_1.0"].value("exclusive")=="false":
+            exclusive_flag = False
+    if exclusive_flag:
+        el = check_schema_coverage(doc, schema)
+        error_list.extend(el)
     #
     # PASS TWO: REQUIREMENTS CHECK OF SCHEMA
     #
     # this pass verifies that any 'required' entries in the
-    # schema are met. If auto-inserts if allowed. Otherwise,
+    # schema are met. It auto-inserts if allowed. Otherwise,
     # it adds an error.
     el = sub_schema_requirements(doc, schema)
     error_list.extend(el)
@@ -495,7 +499,7 @@ def check_schema_coverage(doc, schema):
         (name, value, index, seq) = entry
         temp_schema = schema_match_up(doc, schema)
         if not name in temp_schema.list_values("name"):
-            error_list.append( ("doc", seq, "a name of '{}' not found in schema".format(name)) )
+            error_list.append( ("[error]", "doc", seq, "a name of '{}' not found in schema".format(name)) )
         else:
             # check subs
             el = check_schema_coverage(doc[name, value, index], temp_schema["name", name])
@@ -541,7 +545,7 @@ def sub_schema_treatments(doc, orig_schema):
                     first_line[ev] = es
                 else:
                     delete_list.append((en, ev, ei))
-                    error_list.append( ("doc", es, "'{}' entries should be unique, but this line is a duplicate of line {}.".format(target, first_line[ev])) )
+                    error_list.append( ("[error]", "doc", es, "'{}' entries should be unique, but this line is a duplicate of line {}.".format(target, first_line[ev])) )
             for tup in reversed(delete_list):  # the items must be deleted in reverse to avoid index numbering problems
                 del doc[tup]
         elif treatment=="sum":
@@ -554,7 +558,7 @@ def sub_schema_treatments(doc, orig_schema):
                 first_line = entry_list[0][3]
                 del entry_list[0]
                 for (en, ev, ei, es) in entry_list:
-                    error_list.append( ("doc", es, "only one '{}' entry should exist, but this line is in addition to line {}.".format(target, first_line)) )
+                    error_list.append( ("[error]", "doc", es, "only one '{}' entry should exist, but this line is in addition to line {}.".format(target, first_line)) )
                 for (en, ev, ei, es) in reversed(entry_list):
                     del doc[en, ev, ei]
         else:
@@ -594,7 +598,7 @@ def sub_schema_requirements(doc, orig_schema):
                         if value_parms.value("default"):
                             doc[target, value, 0]=value_parms.value("default")
                         else:
-                            error_list.append( ("schema", seq, "value is required for '{}'.".format(target)) )
+                            error_list.append( ("[error]", "schema", seq, "value is required for '{}'.".format(target)) )
         # check subs
         for key in doc.keys(target):
             el = sub_schema_requirements(doc[key], pointer)
