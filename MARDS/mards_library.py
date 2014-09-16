@@ -273,7 +273,7 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
             t = ("[error]", "schema", es, "'{}' not a recognized schema element name".format(en))
             error_list.append(t)
             schema.seq_delete(es)
-    #################################
+    ##################################
     #
     # IMPLEMENT Header and imports
     #
