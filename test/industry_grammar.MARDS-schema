@@ -28,6 +28,9 @@ template workstep_grammar
         match 'assembly'    
             extend assembly_workstep_grammar
                 from assembly_grammar
+        match 'shipping'
+            extend shipping_workstep_grammar
+                from shipping_grammar
 
 template parts_grammar
     search label
