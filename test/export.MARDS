@@ -1,87 +1,222 @@
-recipe "Stencilizer"
-id "53bdbb8af02d5e000ffddbc3"
-parameter stencilfile_layer1
-    __origin_id 53bdbd2d48b63d5963000000
+recipe  "Storm_The_Gate_Engraved"
+id "52f9025e020e6007b49b37e5"
+parameter engrave_name
+    __origin_id 5307ac269381890d14000000
     version 0.1 mr
-    type file
-parameter stencilfile_layer2
-    __origin_id 53d3c103fe5c7c01e4000000
+    type string
+maker panel_shop
+    __origin_id 52d5a747020e60178f3ef05e
     version 0.1 mr
-    type file
-parameter stencilfile_layer3
-    __origin_id 53d3c105fe5c7c01e4000001
+    company_id 5296799e020e60295c33fc6d
+maker laser_shop
+    __origin_id 52d5a7b1020e60178e3ef101
     version 0.1 mr
-    type file
-parameter stencilfile_layer4
-    __origin_id 53d3c109fe5c7c01e4000002
-    version 0.1 mr
-    type file
-parameter stencil_sample
-    __origin_id 53cfd1e248b63d654b000000
-    version 0.1 mr
-    type file
-    description "The stencil sample PDF file"
-maker laser_cutter_guy
-    __origin_id 53bdbb9f48b63d0796000000
-    version 0.1 mr
-    company_name "Wetpaint Designs LLC (Corporation)"
     company_id 526ae7db020e603fb3fc4181
-workstep print
-    __origin_id 53bf0a4a9381896708000000
+maker the_finisher
+    __origin_id 52d5a6b8020e60178e3ef027
     version 0.1 mr
-    industry printing
-    function bw_laser_print
-    maker laser_cutter_guy
-    typical_cost $1.00
-    print_file {stencil_sample}
-    output sample_sheet
-workstep cut_layer_1
-    __origin_id 53bdbb8af02d5e000ffddbc8
+    company_id 5296799e020e60295c33fc6d
+part walnut_board
+    label lumber
+    __origin_id 52a10114020e6033a341e292
+    version 0.1 mr
+    species walnut
+    surface_finish rough
+    thickness 4/4
+    qty 3
+    minimum_width 2in
+    board_feet_at_minimum 2.2
+part plywood_birch_panel
+    __origin_id 52a144b9020e6033a341e295
+    version 0.1 mr
+    label wood_panel
+    top_surface birch
+    core mdf
+    top_quality fine
+    bottom_quality medium
+    thickness 8.6mm
+workstep cut_side
+    __origin_id 52a0eb7c020e6033a341e262
+    version 0.1 mr
+    industry woodworking
+    function cut_board
+    typical_cost $0.10
+    input walnut_board
+    length 39in
+    width 2in
+    repeat 2
+    maker panel_shop
+parameter side_motto
+    __origin_id 52a10574020e6033a341e294
+    version 0.1 mr
+    type string
+workstep cnc_side_and_end
+    __origin_id 52a0fe67020e6033a741e300
+    version 0.1 mr
+    industry woodworking
+    function cnc_part
+    typical_cost $1.10
+    repeat 2
+    input "cut_side"
+    part_file "CNC SIDE.gcode"
+    # tool 1 "1/4in down spiral"
+    output side_piece
+    output end_piece
+    maker panel_shop
+workstep laser_logo
+    __origin_id 52a0febe020e6033a741e307
     version 0.1 mr
     industry laser_cutting
-    function vector_cut
-    part_file {stencilfile_layer1}
-    maker laser_cutter_guy
-    typical_cost $6.50
-    output layer_1_sheet
-workstep cut_layer_2
-    __origin_id 53d3c064fe5c7c29a7000001
+    function raster_engrave
+    typical_cost $2.10
+    input side_piece
+    maker laser_shop
+    xpos 45
+    ypos 90
+    image logo1.png
+workstep laser_message
+    __origin_id 52a0fee4020e6033a741e309
     version 0.1 mr
     industry laser_cutting
-    function vector_cut
-    part_file {stencilfile_layer2}
-    maker laser_cutter_guy
-    typical_cost $6.50
-    output layer_2_sheet
-workstep cut_layer_3
-    __origin_id 53d3c05efe5c7c29a7000000
+    function vector_engrave
+    typical_cost $2.80
+    input side_piece
+    maker laser_shop
+    xpos 0
+    ypos 0 
+    font_file zaphchancery.ttf
+    engravestring side_moto
+workstep cut_bridge
+    __origin_id 52a0feff020e6033a341e28b
     version 0.1 mr
-    industry laser_cutting
-    function vector_cut
-    part_file {stencilfile_layer3}
-    maker laser_cutter_guy
-    typical_cost $6.50
-    output layer_3_sheet
-workstep cut_layer_4
-    __origin_id 53d3c00cfe5c7c67bd000000
+    industry woodworking
+    function cut_board  
+    typical_cost $1.34
+    input walnut_board
+    length 15in
+    width 2in
+    maker panel_shop
+workstep cnc_bridge
+    __origin_id 52a0ff0f020e6033a741e30c
     version 0.1 mr
-    industry laser_cutting
-    function vector_cut
-    part_file {stencilfile_layer4}
-    maker laser_cutter_guy
-    typical_cost $6.50
-    output layer_4_sheet
-workstep assemble_stencil_pack
-    __origin_id 53bf0ac193818977f8000000
+    industry woodworking
+    function cnc_part
+    part_file bridgefile.gcode
+    typical_cost $1.50
+    input cut_bridge
+    maker panel_shop
+workstep cut_floor
+    __origin_id 52a0ff36020e6033a741e310
+    version 0.1 mr
+    industry woodworking
+    function cut_panel
+    typical_cost $1.20
+    input plywood_birch_panel
+    maker panel_shop
+    width 16in
+    length 24in
+workstep cnc_floor
+    __origin_id 52a0ff27020e6033a741e30e
+    version 0.1 mr
+    industry woodworking
+    function cnc_panel
+    typical_cost $1.20
+    input cut_floor
+    maker panel_shop
+    part_file STGfloor.gcode
+workstep glue_frame
+    __origin_id 52a0ff48020e6033a741e312
+    version 0.1 mr
+    industry woodworking
+    function glue_assembly
+    typical_cost $0.50
+    dry_time 120
+    adhesive wood_standard
+    input cnc_bridge
+    input laser_message
+    input laser_logo
+    input end_piece
+    maker the_finisher
+workstep sand_frame
+    __origin_id 52a0ff59020e6033a341e28c
+    version 0.1 mr
+    industry woodworking
+    function sand_part
+    typical_cost $1.20
+    abrasive "60 grit then 120grit. putty if not obvious"
+    input glue_frame
+    maker the_finisher
+workstep glue_floor
+    __origin_id 52a0ff73020e6033a741e314
+    version 0.1 mr
+    industry woodworking
+    function glue_assembly
+    dry_time 90
+    adhesive wood_standard
+    typical_cost $0.50
+    input sand_frame
+    input cnc_floor
+    maker the_finisher
+part cups
+    __origin_id 52a0ff8c020e6033a741e315
+    version 0.1 mr
+    label from_distributor
+    distributor some_name
+    # distributor_url "http://xyz.com/"
+    part_number 382923
+    qty 4
+part buttons
+    __origin_id 52a0ff9e020e6033a741e317
+    version 0.1 mr
+    label from_distributor
+    distributor some_name
+    part_number "12456zd"
+    qty 4
+workstep apply_wax
+    __origin_id 52a1493b020e6033a741e334
+    version 0.1 mr
+    industry woodworking
+    function surface_finish
+    typical_cost $0.80
+    dry_time 120
+    input cups 
+        qty 4
+    input buttons 
+        qty 4
+    input glue_floor
+    finishing_agent wax
+    maker the_finisher
+workstep assemble
+    __origin_id 52a0ffbd020e6033a741e319
     version 0.1 mr
     industry assembly
     function workbench
-    maker laser_cutter_guy
-    typical_cost $0.50
-    input layer_1_sheet
-    input layer_2_sheet
-    input layer_3_sheet
-    input layer_4_sheet
-    input sample_sheet
-    output stencil_kit 
+    # instructions "String together the cups across the board by tieing knots into the bungee cord.\nUsing a heat source, slightly melt the cut bungee cord ends.\nGlue caps on the the cups to hide the knots."
+    typical_cost $1.30
+    input apply_wax
+    maker the_finisher
+part box
+    __origin_id 52a100aa020e6033a741e31d
+    version 0.1 mr
+    label from_distributor
+    distributor uline_corporation
+    part_number "S-16763"
+    description "24in x 20in x 4in rigid box"
+part part_and_pucks_bag
+    __origin_id 52a14c63020e6033a741e336
+    version 0.1 mr
+    label open
+    description "a pre-assembled bag of pucks and instructions"
+workstep package
+    __origin_id 52a1009a020e6033a741e31c
+    version 0.1 mr
+    industry shipping 
+    function package
+    fill "starch peanuts"
+    typical_cost $1.50
+    input box
+    input assemble
+    input part_and_pucks_bag
+    output "Storm_The_Gate" 
         final
+    maker the_finisher

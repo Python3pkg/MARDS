@@ -1,3 +1,31 @@
-#!MARDS_schema_en_1.0 laser_cutting_grammar_0.2
+#!MARDS_schema_en_1.0 shipping_grammar_0.2
+
+## #######################
+##
+## Worksteps
+##
+## #######################
+
+template shipping_workstep_grammar
+    search function
+        match 'package'
+            extend package
+
+template package
+    describe en 
+        title "pack materials for shipping"
+    name fill
+        value
+            required
+            type radio_select
+                choice peanut
+                choice preform_styro
+        describe en
+            title "material to fill around shipped parts"
 
 
+## #######################
+##
+## Parts
+##
+## #######################
