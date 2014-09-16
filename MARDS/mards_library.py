@@ -292,12 +292,24 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
                 file_loc = i.value("local")
                 if file_loc is None:
                     file_loc = iev+".MARDS-schema"
-                try:
-                    with open(file_loc, 'r') as file:
-                        subdata = file.read()
-                except IOError, e: 
-                    error_list.append ( ("[error]", "schema", ies, str(e)) )
-                    subdata = None
+                    try:
+                        with open(file_loc, 'r') as file:
+                            subdata = file.read()
+                    except: 
+                        file_loc = schema_dir+"/"+iev+".MARDS-schema"
+                        try:
+                            with open(file_loc, 'r') as file:
+                                subdata = file.read()
+                        except IOError, e: 
+                            error_list.append ( ("[error]", "schema", ies, str(e)) )
+                            subdata = None
+                else:
+                    try:
+                        with open(file_loc, 'r') as file:
+                            subdata = file.read()
+                    except IOError, e: 
+                        error_list.append ( ("[error]", "schema", ies, str(e)) )
+                        subdata = None
                 if subdata:
                     sr,e = SCHEMA_to_rolne(subdata, prefix=prx)
                     schema.extend(sr)  #TODO: 'prepend' rather than 'extend'?

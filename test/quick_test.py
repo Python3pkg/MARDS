@@ -29,7 +29,7 @@ zed 1.234e+2
 '''
 
 #x,e = MARDS.ml.SCHEMA_to_rolne(MARDS.st.standard_types_text)
-x,e = MARDS.string_to_rolne(doc, schema_file="simple.MARDS-schema")
+x,e = MARDS.string_to_rolne(doc, schema_file="temp/simple.MARDS-schema")
 print "FINAL:\n"
 print x._explicit()
 print "ERRORS:\n"
