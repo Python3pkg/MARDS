@@ -13,7 +13,7 @@ def main(argv):
    sfile = 'mr recipe.MARDS-schema'
    debug = False
    try:
-      opts, args = getopt.getopt(argv,"hdi:o:",["ifile=","sfile=","debug"])
+      opts, args = getopt.getopt(argv,"hdi:s:",["ifile=","sfile=","debug"])
    except getopt.GetoptError:
       print 'test.py -i <docfile> -s <schemafile>'
       sys.exit(2)
