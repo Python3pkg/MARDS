@@ -12,14 +12,16 @@ def main(argv):
    inputfile = ''
    sfile = 'mr recipe.MARDS-schema'
    debug = False
+   warnings = False
+   logs = False
    try:
-      opts, args = getopt.getopt(argv,"hdi:s:",["ifile=","sfile=","debug"])
+      opts, args = getopt.getopt(argv,"hdwli:s:",["ifile=","sfile=","debug"])
    except getopt.GetoptError:
       print 'test.py -i <docfile> -s <schemafile>'
       sys.exit(2)
    for opt, arg in opts:
       if opt == '-h':
-         print 'export-test.py -i <ifile> -s <sfile> (default = mr recipe.MARDS-schema> -d <debug>'
+         print 'export-test.py -i <ifile> -s <sfile> (default = mr recipe.MARDS-schema> -d <debug> -w -l'
          sys.exit()
       elif opt in ("-i", "--ifile"):
          inputfile = arg
@@ -27,6 +29,10 @@ def main(argv):
          sfile = arg
       elif opt in ("-d", "--debug"):
          debug = True
+      elif opt in ("-w", "--warnings"):
+         warnings = True
+      elif opt in ("-l", "--logs"):
+         logs = True
 
    print 'docfile is: ', inputfile
    print 'Schema file is: ', sfile
@@ -42,9 +48,28 @@ def main(argv):
    
    print "FINAL:\n"
    print x._explicit()
-   print "ERRORS:\n"
-   print repr(e)
+   print "ERRORS:\n\n"
+   if warnings:
+        print "* warnings shown\n"
+   else:
+        print "* warnings NOT shown\n"
+   if logs:
+        print "* logs shown\n\n"
+   else:
+        print "* logs NOT shown\n\n"
+   print "{:<9} {:<6} {:<10} {}\n".format("level", "source", "seq", "message")
+   for entry in e:
+        show = False
+        if entry[0]=='[error]':
+            show = True
+        if entry[0]=='[warning]' and warnings:
+            show = True
+        if entry[0]=='[logs]' and logs:
+            show = True
+        if show:
+            print "{:<9} {:<6} {:<10} {}\n".format(entry[0], entry[1], entry[2], entry[3])
 
+   print "EOL\n"
 if __name__ == "__main__":
    main(sys.argv[1:])
 

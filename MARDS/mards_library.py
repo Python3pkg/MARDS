@@ -584,6 +584,8 @@ def sub_schema_treatments(doc, orig_schema):
                 first_line = entry_list[0][3]
                 del entry_list[0]
                 for (en, ev, ei, es) in entry_list:
+                    #print doc
+                    #exit()
                     error_list.append( ("[error]", "doc", es, "only one '{}' entry should exist, but this line is in addition to line {}.".format(target, first_line)) )
                 for (en, ev, ei, es) in reversed(entry_list):
                     del doc[en, ev, ei]
@@ -601,31 +603,30 @@ def sub_schema_requirements(doc, orig_schema):
     schema = schema_match_up(doc, orig_schema)
     global req_ctr
     error_list = []
-    for target in schema.list_values("name"):
-        pointer = schema["name", target]
-        # check for missing target
-        if pointer.list_values("required", None):
-            if doc.list_values(target):
-                pass
-            else:
-                if pointer.list_values("value", None):
-                    doc.append(target, pointer["value", None].get_value("default"), seq='auto'+str(req_ctr))
+    for name_rule in schema.only("name"):
+        # check/insert if a required name
+        target_name = name_rule.value
+        if name_rule.has("required"):
+            if not doc.has(target_name):
+                if name_rule.has("value"):
+                    newseq = doc.append(target_name, name_rule["value"].get_value("default"), seq='auto'+str(req_ctr))
                 else:
-                    doc.append(target, None, seq="auto"+str(req_ctr))
+                    newseq = doc.append(target, None, seq="auto"+str(req_ctr))
+                error_list.append( ("[warning]", "doc", newseq, "an entry for '{}' is required so it was automaticaly inserted.".format(target_name)) )
                 req_ctr += 1
         # check 'value' (if exists)
-        if pointer.list_values("value", None):
-            value_parms = pointer["value", None]
-            if value_parms.list_values("required", None):
-                for name,value,index,seq in doc.list_tuples():
-                    if value is None:
-                        if value_parms.get_value("default"):
-                            doc[target, value, 0]=value_parms.get_value("default")
-                        else:
-                            error_list.append( ("[error]", "schema", seq, "value is required for '{}'.".format(target)) )
+        if name_rule.has("value"):
+            value_parms = name_rule["value"]
+            if value_parms.has("required"):
+                for item in doc.only((target_name, None)):
+                    if value_parms.has("default"):
+                        item.value = value_parms.get_value("default")
+                        error_list.append( ("[warning]", "doc", item.seq, "value was required for '{}' so the default value of '{}' was used.".format(target_name, str(value_parms.get_value("default")))) )
+                    else:
+                        error_list.append( ("[error]", "doc", item.seq, "value is required for '{}' and there is not default value.".format(target_name)) )
         # check subs
-        for key in doc.list_keys(target):
-            el = sub_schema_requirements(doc[key], pointer)
+        for item in doc.only(target_name):
+            el = sub_schema_requirements(item, name_rule)
             error_list.extend(el)
     return error_list
 

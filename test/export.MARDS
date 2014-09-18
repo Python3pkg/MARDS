@@ -217,6 +217,6 @@ workstep package
     input box
     input assemble
     input part_and_pucks_bag
-    output "Storm_The_Gate" 
+    output "Storm_The_Gate"
         final
     maker the_finisher
