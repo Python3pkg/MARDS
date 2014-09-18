@@ -1265,3 +1265,25 @@ For an APA-style In-Text citation:
         paragraph "Section 1.10.32"
    
 None of the other extensions to Markdown are supported.
+
+
+-------------------------
+SEARCH, MATCH, MATCH_ELSE
+-------------------------
+
+TODO: write it up
+
+-------------------------
+EXCLUSIVE
+-------------------------
+
+TODO: write up
+exclusive False
+
+prevents requiring that all names be in schema.
+
+-------------------------
+RAISE_ERROR, RAISE_WARNING, RAISE_LOG
+-------------------------
+
+TODO: write up

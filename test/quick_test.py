@@ -16,7 +16,7 @@ blink "zippy_b.oing"
     rate 23
     abc beep beep 
         joex 44ft
-        joey zed
+        joey zedd
         joeBxx 5 inches
 item "broom"
     size 33

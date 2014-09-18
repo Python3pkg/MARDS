@@ -235,8 +235,8 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
     # mark as False if the key is seen twice
     # also do basic syntax checking
     ################################
-    for key in schema.flattened_list( (), name=True, value=True, seq=True):
-        (en, ev, es) = key
+    for key in schema.grep():
+        (en, ev, ei, es) = key
         if en in ["name", "template"]:
             pass
         elif en in ["#!MARDS_schema_en_1.0", "import", "local", "exclusive"]:
@@ -246,7 +246,7 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
         elif en in ["limit"]:
             # TODO: check that parent is 'recurse'
             parent_es = schema.seq_parent(es)
-            if schema.at_seq(parent_es).name()!='recurse':
+            if schema.at_seq(parent_es).name!='recurse':
                 error_list.append( ("[error]", "schema", es, "the 'limit' element may only be applied to a 'recurse'") )
                 schema.seq_delete(es)
             else:
@@ -263,7 +263,9 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
             pass
         elif en in ["describe", "title", "abstract", "body", "reference", "author", 'title', 'url', 'journal', 'book', 'date_written', 'date_retreived', 'pages', 'paragraphs', 'copyright_message', 'publisher']:
             pass
-        elif en in ["match", "search"]:
+        elif en in ["match", "search", "match_else"]:
+            pass
+        elif en in ["raise_error", "raise_warning", "raise_log"]:
             pass
         elif en in ["type", "choice", "search", "min"]:  ## TODO: Type stuff
             pass
@@ -278,18 +280,18 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
     # IMPLEMENT Header and imports
     #
     #################################
-    schema_list = schema.flattened_list(("#!MARDS_schema_en_1.0"), value=True, seq=True)
-    for (ev, es) in schema_list:
+    schema_list = schema.list_tuples("#!MARDS_schema_en_1.0")
+    for (ev, en, ei, es) in schema_list:
         header = schema.at_seq(es)
-        import_list = header.flattened_list(("import"), name=True, value=True, seq=True)
-        for (ien, iev, ies) in import_list:
+        import_list = header.list_tuples("import")
+        for (ien, iev, iei, ies) in import_list:
             i = header.at_seq(ies)
             if iev:
                 prx = iev+"/"
             else:
                 prx = "./"
-            if i.name("local"):
-                file_loc = i.value("local")
+            if i.get_name("local"):
+                file_loc = i.get_value("local")
                 if file_loc is None:
                     file_loc = iev+".MARDS-schema"
                     try:
@@ -327,8 +329,8 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
     copy = schema.copy(seq_prefix="", seq_suffix="")
     name_seq = {}
     name_recurs = {}
-    for key in schema.flattened_list( (), name=True, value=True, seq=True):
-        (en, ev, es) = key
+    for key in schema.grep():
+        (en, ev, _, es) = key
         if en in ["name", "template"]:
             if ev in name_seq:
                 name_seq[ev]=False
@@ -342,11 +344,11 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
     # 'name' in the copy.
     #################################
 
-    schema_list = schema.flattened_list(("template"), value=True, seq=True)
-    for (ev, es) in schema_list:
+    schema_list = schema.grep("template")
+    for (ev, _, _, es) in schema_list:
         if not prefix:
             schema.seq_delete(es)
-        copy.at_seq(es).set_name("name")
+        copy.at_seq(es).name="name"
     #print "jschema",prefix,schema
     #print "jcopy",copy
     #################################
@@ -354,10 +356,10 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
     # IMPLEMENT 'insert'
     #
     #################################
-    schema_list = schema.flattened_list(("insert"), value=True, seq=True)
+    schema_list = schema.grep("insert")
     safety_ctr=0
     while schema_list and safety_ctr<20:
-        for (ev, es) in schema_list:
+        for (_, ev, _, es) in schema_list:
             if ev in name_seq:
                 if name_seq[ev] is False:
                     t = ("[error]", "schema", es, "'name {}' found in schema multiple times".format(ev))
@@ -373,22 +375,22 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
                         error_list.append(("[error]", "schema", es, "'insert {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
                         schema.seq_delete(es)
                     else:
-                        schema.seq_replace(es, copy.ptr_to_seq(src), prx)
+                        schema.seq_replace(es, copy.at_seq(src), prx)
             else:
                 t = ("[error]", "schema", es, "'name {}' not found in schema".format(ev))
                 error_list.append(t)
                 schema.seq_delete(es)
-        schema_list = schema.flattened_list(("insert"), value=True, seq=True)
+        schema_list = schema.grep("insert")
         safety_ctr += 1
     #################################
     #
     # IMPLEMENT 'extend'
     #
     #################################
-    schema_list = schema.flattened_list(("extend"), value=True, seq=True)
+    schema_list = schema.grep("extend")
     safety_ctr=0
     while schema_list and safety_ctr<20:
-        for (ev, es) in schema_list:
+        for (_, ev, _, es) in schema_list:
             if ev in name_seq:
                 if name_seq[ev] is False:
                     t = ("[error]", "schema", es, "'name {}' found in schema multiple times".format(ev))
@@ -412,17 +414,17 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
                 t = ("[error]", "schema", es, "'name {}' not found in schema".format(ev))
                 error_list.append(t)
                 schema.seq_delete(es)
-        schema_list = schema.flattened_list(("extend"), value=True, seq=True)
+        schema_list = schema.grep("extend")
         safety_ctr += 1
     #################################
     #
     # IMPLEMENT 'resurse' recursion
     #
     #################################
-    schema_list = schema.flattened_list(("recurse"), value=True, seq=True)
+    schema_list = schema.grep("recurse")
     safety_ctr=0
     while schema_list and safety_ctr<20:
-        for (ev, es) in schema_list:
+        for (_, ev, _, es) in schema_list:
             if ev in name_seq:
                 if name_seq[ev] is False:
                     t = ("[error]", "schema", es, "'name {}' found in schema multiple times".format(ev))
@@ -430,7 +432,7 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
                     schema.seq_delete(es)
                 else:
                     src = name_seq[ev]
-                    depth_desired = schema.at_seq(es).value("limit")
+                    depth_desired = schema.at_seq(es).get_value("limit")
                     if depth_desired is None:
                         depth_desired = 2
                     else:
@@ -450,7 +452,7 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
                 t = ("[error]", "schema", es, "'name {}' not found in schema".format(ev))
                 error_list.append(t)
                 schema.seq_delete(es)
-        schema_list = schema.flattened_list(("recurse"), value=True, seq=True)
+        schema_list = schema.grep("recurse")
         safety_ctr += 1
     ########################
     #   DONE
@@ -473,7 +475,7 @@ def schema_rolne_check(doc, schema):
     #
     exclusive_flag = True
     if schema.list_names("#!MARDS_schema_en_1.0"):
-        if schema["#!MARDS_schema_en_1.0"].value("exclusive")=="false":
+        if schema["#!MARDS_schema_en_1.0"].get_value("exclusive")=="false":
             exclusive_flag = False
     if exclusive_flag:
         # print "jj", schema
@@ -498,6 +500,12 @@ def schema_rolne_check(doc, schema):
     el = st.apply_schema_types(doc, schema)
     error_list.extend(el)
     #
+    #
+    # PASS FIVE: RAISE_ERROR CHECKS
+    #
+    el = sub_schema_raises(doc, schema)
+    error_list.extend(el)
+    #
     return doc, error_list
 
 def check_schema_coverage(doc, schema):
@@ -508,7 +516,7 @@ def check_schema_coverage(doc, schema):
     is a matching 'name' in the schema at that level.
     '''
     error_list = []
-    for entry in doc.dump_list( (), name=True, value=True, index=True, seq=True):
+    for entry in doc.list_tuples():
         (name, value, index, seq) = entry
         temp_schema = schema_match_up(doc, schema)
         if not name in temp_schema.list_values("name"):
@@ -525,16 +533,21 @@ def schema_match_up(doc, schema):
     
     given the doc, it returns a schema copy that implements the match
     '''
-    search_list = schema.list_values("search")  #TODO have earlier scan remove duplicate searches (e.g. 'search color' and 'search color' in same layer/context)
+    search_list = schema.list_keys("search")
     if search_list:
         copy = schema.copy(seq_prefix="match_", seq_suffix="")
-        for target_name in search_list:
-            target_value = doc.value(target_name)
-            if target_value:
-                match_list = copy["search", target_name].list_values("match")
-                if target_value in match_list:
-                    copy.extend(copy["search", target_name]["match", target_value])
-                    del copy["search", target_name]
+        for skey in search_list:
+            (_, target, _) = skey
+            doc_value = doc.get_value(target)
+            match_list = copy[skey].list_values("match")
+            if doc_value in match_list:
+                copy.extend(copy[skey]["match", doc_value])
+                del copy[skey]
+                copy = schema_match_up(doc, copy)
+            else:
+                if copy[skey].has("match_else"):
+                    copy.extend(copy[skey]["match_else"])
+                    del copy[skey]
                     copy = schema_match_up(doc, copy)
         return copy
     return schema
@@ -544,7 +557,7 @@ def sub_schema_treatments(doc, orig_schema):
     error_list = []
     for target in schema.list_values("name"):
         pointer = schema["name", target]
-        treatment = pointer.value("treatment")
+        treatment = pointer.get_value("treatment")
         if not treatment:
             treatment = "list"
         if treatment=="list":
@@ -552,7 +565,7 @@ def sub_schema_treatments(doc, orig_schema):
         elif treatment=="unique":
             first_line = {}
             delete_list=[]
-            for entry in doc.dump_list((target), name=True, value=True, index=True, seq=True):
+            for entry in doc.list_tuples(target):
                 (en, ev, ei, es) = entry
                 if ei==0:
                     first_line[ev] = es
@@ -566,7 +579,7 @@ def sub_schema_treatments(doc, orig_schema):
         elif treatment=="average":
             pass
         elif treatment=="one":
-            entry_list = doc.dump_list((target), name=True, value=True, index=True, seq=True)
+            entry_list = doc.list_tuples(target)
             if len(entry_list)>1:
                 first_line = entry_list[0][3]
                 del entry_list[0]
@@ -577,7 +590,7 @@ def sub_schema_treatments(doc, orig_schema):
         else:
             pass
         # check subs
-        for key in doc.keys(target):
+        for key in doc.list_keys(target):
             el = sub_schema_treatments(doc[key],schema["name", target])
             error_list.extend(el)
     return error_list
@@ -596,7 +609,7 @@ def sub_schema_requirements(doc, orig_schema):
                 pass
             else:
                 if pointer.list_values("value", None):
-                    doc.append(target, pointer["value", None].value("default"), seq='auto'+str(req_ctr))
+                    doc.append(target, pointer["value", None].get_value("default"), seq='auto'+str(req_ctr))
                 else:
                     doc.append(target, None, seq="auto"+str(req_ctr))
                 req_ctr += 1
@@ -604,23 +617,43 @@ def sub_schema_requirements(doc, orig_schema):
         if pointer.list_values("value", None):
             value_parms = pointer["value", None]
             if value_parms.list_values("required", None):
-                for name,value,index,seq in doc.dump_list((target), name=True, value=True, index=True, seq=True):
-                    #key_list = [(name, value, index)]
-                    #line_number = find_rolne_line(line_keys, key_list)
+                for name,value,index,seq in doc.list_tuples():
                     if value is None:
-                        if value_parms.value("default"):
-                            doc[target, value, 0]=value_parms.value("default")
+                        if value_parms.get_value("default"):
+                            doc[target, value, 0]=value_parms.get_value("default")
                         else:
                             error_list.append( ("[error]", "schema", seq, "value is required for '{}'.".format(target)) )
         # check subs
-        for key in doc.keys(target):
+        for key in doc.list_keys(target):
             el = sub_schema_requirements(doc[key], pointer)
             error_list.extend(el)
     return error_list
 
+def sub_schema_raises(doc, schema):
+    '''
+    Look for "raise_error", "raise_warning", and "raise_log"
+    
+    '''
+    error_list = []
+    temp_schema = schema_match_up(doc, schema)
+    for msg in temp_schema.list_values("raise_error"):
+        error_list.append( ("[error]", "doc", doc.seq, "'{}'".format(msg)) )
+    for msg in temp_schema.list_values("raise_warning"):
+        error_list.append( ("[warning]", "doc", doc.seq, "'{}'".format(msg)) )
+    for msg in temp_schema.list_values("raise_log"):
+        error_list.append( ("[log]", "doc", doc.seq, "'{}'".format(msg)) )
+    for entry in doc:
+        if temp_schema.has(("name", entry.name)):
+            el = sub_schema_raises(entry, temp_schema["name", entry.name])
+            error_list.extend(el)
+    return error_list
+    
+    
+    
+    
 def sub_convert_python(doc, schema):
     #print "jj", doc, schema
-    if schema.value("ordered")=="False":
+    if schema.get_value("ordered")=="False":
         name_ordered_flag = False
     else:
         name_ordered_flag = True
@@ -631,10 +664,10 @@ def sub_convert_python(doc, schema):
         result = {}
     delete_list = {}
     # parse each entry
-    for entry in doc.dump_list( (), name=True, value=True, index=True, seq=True):
+    for entry in doc.list_tuples():
         (en, ev, ei, es) = entry
-        treatment = schema["name", en].value("treatment")
-        if schema["name", en].value("ordered")=="False":
+        treatment = schema["name", en].get_value("treatment")
+        if schema["name", en].get_value("ordered")=="False":
             value_ordered_flag = False
         else:
             value_ordered_flag = True

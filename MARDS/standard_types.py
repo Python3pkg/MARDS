@@ -53,12 +53,12 @@ def _apply_schema_types(doc, orig_schema, extended):
 #              and .parent_key()
     
 def get_item_rule(item, schema):
-    if item.name() in schema.list_values("name"):
-        return schema["name", item.name()]
+    if item.name in schema.list_values("name"):
+        return schema["name", item.name]
     return None    
     
 def do_normalization(item, rule, schema):
-    value_type = rule.value()
+    value_type = rule.value
     type_rule = schema.find("define_type", value_type)
     error_list = []
     if  value_type=="string":
@@ -76,7 +76,7 @@ def do_normalization(item, rule, schema):
     elif value_type=="radio_select":
         error_list = do_norm_radio_select(item, rule, type_rule)
     elif value_type=="ignore":
-        item.set_value(None)
+        item.value = None
     elif value_type=="unit":
         pass ## nothing to do for a unit type
     elif value_type=="angle":
@@ -115,7 +115,7 @@ def do_normalization(item, rule, schema):
         if type_rule is not None:
             pass ## nothing to do as it is user defined
         else:
-            error_list = [ ("[error]", "schema", rule.seq(), "'type {}' unknown.".format(value_type)) ]
+            error_list = [ ("[error]", "schema", rule.seq, "'type {}' unknown.".format(value_type)) ]
     return error_list
     
 label_search = regex.compile(ur"[\p{Z}\p{P}^](?<!_)(?<!\.)(?<!\*)", regex.UNICODE)
@@ -123,19 +123,19 @@ label_search = regex.compile(ur"[\p{Z}\p{P}^](?<!_)(?<!\.)(?<!\*)", regex.UNICOD
 def do_norm_label(item, rule, type_rule):
     global label_search
     error_list = []
-    value = unicode(item.value())
+    value = unicode(item.value)
     #TODO check for required?
     if value is not None:
         r = label_search.search(value)
         if r:
-            error_list = [("[error]", "doc", item.seq(), "'{} {}' has characters not permitted. Detail: '{}'".format(item.name(), value, str(r)))]
+            error_list = [("[error]", "doc", item.seq, "'{} {}' has characters not permitted. Detail: '{}'".format(item.name, value, str(r)))]
     return error_list
 
 def do_norm_price(item, rule, type_rule):
     error_list = []
-    flag, number, raw_unit = split_number_unit(item.value(), strip_list=['$'])
+    flag, number, raw_unit = split_number_unit(item.value, strip_list=['$'])
     if not flag:
-        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a price.".format(str(item.value())))]
+        error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a price.".format(str(item.value)))]
     else:
         unit = find_unit(raw_unit.lower(), type_rule)
         if unit == "USD":
@@ -143,23 +143,23 @@ def do_norm_price(item, rule, type_rule):
         elif unit == "USD_cents":
             final = number/decimal.Decimal('100.00')
         elif unit==False:
-            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a currency (price) unit.".format(raw_unit))]
+            error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a currency (price) unit.".format(raw_unit))]
             return error_list
         else:
             final = number*decimal.Decimal('1.00')
         final = final.quantize(decimal.Decimal('0.000001'))
         string = str(final)+" USD"
-        item.set_value(string)
+        item.value = string
     return error_list
 
 def do_norm_qty(item, rule, type_rule):
     error_list = []
-    flag, number, raw_unit = split_number_unit(item.value())
+    flag, number, raw_unit = split_number_unit(item.value)
     if not flag:
-        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a quantity.".format(str(item.value())))]
+        error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a quantity.".format(str(item.value)))]
     else:
         if raw_unit:
-            error_list = [("[error]", "doc", item.seq(), "a unit '{}' is not expected for a basic quantity.".format(raw_unit))]
+            error_list = [("[error]", "doc", item.seq, "a unit '{}' is not expected for a basic quantity.".format(raw_unit))]
             return error_list
         else:
             final = number
@@ -167,15 +167,15 @@ def do_norm_qty(item, rule, type_rule):
         final = final.quantize(decimal.Decimal('1'))
         string = str(final)
         if string!=before:
-            error_list = [("[warning]", "doc", item.seq(), "'{}' was rounded to '{}' as a basic quantity.".format(before, string))]
-        item.set_value(string)
+            error_list = [("[warning]", "doc", item.seq, "'{}' was rounded to '{}' as a basic quantity.".format(before, string))]
+        item.value = string
     return error_list
 
 def do_norm_percent(item, rule, type_rule):
     error_list = []
-    flag, number, raw_unit = split_number_unit(item.value())
+    flag, number, raw_unit = split_number_unit(item.value)
     if not flag:
-        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a percentage.".format(str(item.value())))]
+        error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a percentage.".format(str(item.value)))]
     else:
         unit = find_unit(raw_unit.lower(), type_rule)
         if unit == "fraction":
@@ -183,12 +183,12 @@ def do_norm_percent(item, rule, type_rule):
         elif unit == "percent":
             final = number
         elif unit==False:
-            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a percent symbol or unit.".format(raw_unit))]
+            error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a percent symbol or unit.".format(raw_unit))]
             return error_list
         else:
             final = number
         string = str(final) + " %"
-        item.set_value(string)
+        item.value = string
     return error_list
     
 def do_norm_check_list(item, rule, type_rule):
@@ -196,7 +196,7 @@ def do_norm_check_list(item, rule, type_rule):
     error_list = []
     label_list = []
     in_word_state = False
-    for ch in item.value():
+    for ch in item.value:
         if in_word_state:
             if label_search.search(ch):
                 in_word_state = False
@@ -219,30 +219,30 @@ def do_norm_check_list(item, rule, type_rule):
         if label in proper_labels:
             final_list.append(label)
         else:
-            error_list.append( ("[error]", "doc", item.seq(), "item '{}' not found in allowed choices: {}. item ignored.".format(label, repr(proper_labels))) )
+            error_list.append( ("[error]", "doc", item.seq, "item '{}' not found in allowed choices: {}. item ignored.".format(label, repr(proper_labels))) )
     string = ", ".join(final_list)
-    item.set_value(string)
+    item.value = string
     return error_list
 
 def do_norm_radio_select(item, rule, type_rule):
     global label_search
     error_list = []
-    if item.value() is not None:
-        value = unicode(item.value())
+    if item.value is not None:
+        value = unicode(item.value)
         r = label_search.search(value)
         if r:
-            error_list = [("[error]", "doc", item.seq(), "'{} {}' has characters not permitted. Detail: '{}'".format(item.name(), value, str(r)))]
+            error_list = [("[error]", "doc", item.seq, "'{} {}' has characters not permitted. Detail: '{}'".format(item.name, value, str(r)))]
         else:
             proper_labels = rule.list_values("choice")
             if value not in proper_labels:
-                error_list.append( ("[error]", "doc", item.seq(), "selection '{}' not found in allowed choices: {}.".format(value, repr(proper_labels))) )
+                error_list.append( ("[error]", "doc", item.seq, "selection '{}' not found in allowed choices: {}.".format(value, repr(proper_labels))) )
     return error_list
 
 def do_norm_angle(item, rule, type_rule):
     error_list = []
-    flag, number, raw_unit = split_number_unit(item.value())
+    flag, number, raw_unit = split_number_unit(item.value)
     if not flag:
-        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as an angle.".format(str(item.value())))]
+        error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as an angle.".format(str(item.value)))]
     else:
         unit = find_unit(raw_unit.lower(), type_rule)
         if unit == "degree":
@@ -250,22 +250,22 @@ def do_norm_angle(item, rule, type_rule):
         elif unit == "radian":
             final = number
         elif unit==False:
-            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a percent symbol or unit.".format(raw_unit))]
+            error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a percent symbol or unit.".format(raw_unit))]
             return error_list
         else:
             final = number
         string = str(final) + " radians"
-        item.set_value(string)
+        item.value = string
     return error_list
    
 def do_norm_length(item, rule, type_rule, as_distance=False):
     error_list = []
-    flag, number, raw_unit = split_number_unit(item.value())
+    flag, number, raw_unit = split_number_unit(item.value)
     if not flag:
         if as_distance:
-            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a distance.".format(str(item.value())))]
+            error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a distance.".format(str(item.value)))]
         else:
-            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a length.".format(str(item.value())))]
+            error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a length.".format(str(item.value)))]
     else:
         unit = find_unit(raw_unit.lower(), type_rule)
         if (unit == "in"):
@@ -292,23 +292,23 @@ def do_norm_length(item, rule, type_rule, as_distance=False):
             final = number*decimal.Decimal('0.001')
         elif unit == False:
             if as_distance:
-                error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a distance unit.".format(raw_unit))]
+                error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a distance unit.".format(raw_unit))]
             else:
-                error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a length unit.".format(raw_unit))]
+                error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a length unit.".format(raw_unit))]
             return error_list
         else:
             final = number
         if as_distance and final<0:
             final = final*decimal.Decimal('-1')
         string = str(final)+" m"
-        item.set_value(string)
+        item.value = string
     return error_list
 
 def do_norm_duration(item, rule, type_rule):
     error_list = []
-    if item.value() is None:
+    if item.value is None:
         return error_list
-    string = item.value()
+    string = item.value
     success = True
     if ":" in string:
         ###
@@ -323,7 +323,7 @@ def do_norm_duration(item, rule, type_rule):
                 number += temp*mult
             except:
                 success = False
-                error_list.append(  ("[error]", "doc", item.seq(), "unable to interpret '{}' as a portion of time.".format(part))  )
+                error_list.append(  ("[error]", "doc", item.seq, "unable to interpret '{}' as a portion of time.".format(part))  )
             mult = mult*decimal.Decimal('60')
     else:
         ###
@@ -358,7 +358,7 @@ def do_norm_duration(item, rule, type_rule):
                     pair_list.append( (pending_number, raw_unit) )
                     pending_number = None
                 else:
-                    error_list.append(("[error]", "doc", item.seq(), "unable to interpret '{}' duration. note: '{}' in context.".format(string, word)))
+                    error_list.append(("[error]", "doc", item.seq, "unable to interpret '{}' duration. note: '{}' in context.".format(string, word)))
                     success = False
         else:
             if pending_number:
@@ -375,18 +375,18 @@ def do_norm_duration(item, rule, type_rule):
             elif (unit=="d"):
                 number += num_part*decimal.Decimal(60*60*24)
             elif unit == False:
-                error_list.append(("[error]", "doc", item.seq(), "unable to interpret '{} {}' as a time unit for duration.".format(str(num_part), raw_unit)))
+                error_list.append(("[error]", "doc", item.seq, "unable to interpret '{} {}' as a time unit for duration.".format(str(num_part), raw_unit)))
                 success = False
     if success:
         final = str(number)+" s"
-        item.set_value(final)        
+        item.value = final
     return error_list
 
 def do_norm_mass(item, rule, type_rule):
     error_list = []
-    flag, number, raw_unit = split_number_unit(item.value())
+    flag, number, raw_unit = split_number_unit(item.value)
     if not flag:
-        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a mass.".format(str(item.value())))]
+        error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a mass.".format(str(item.value)))]
     else:
         unit = find_unit(raw_unit.lower(), type_rule)
         if raw_unit == "mg": # resolving capitalization difference
@@ -428,19 +428,19 @@ def do_norm_mass(item, rule, type_rule):
         elif unit == "grain":
             final = number*decimal.Decimal('6.479891E-5')
         elif unit==False:
-            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a unit of mass.".format(raw_unit))]
+            error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a unit of mass.".format(raw_unit))]
             return error_list
         else:
             final = number
         string = str(final) + " kg"
-        item.set_value(string)
+        item.value = string
     return error_list
     
 def do_norm_temperature(item, rule, type_rule):
     error_list = []
-    flag, number, raw_unit = split_number_unit(item.value())
+    flag, number, raw_unit = split_number_unit(item.value)
     if not flag:
-        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a temperature.".format(str(item.value())))]
+        error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a temperature.".format(str(item.value)))]
     else:
         unit = find_unit(raw_unit.lower(), type_rule)
         if unit == "k":
@@ -452,37 +452,37 @@ def do_norm_temperature(item, rule, type_rule):
         elif unit == "c":
             final = number + decimal.Decimal('273.15')           
         elif unit==False:
-            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a unit of temperature.".format(raw_unit))]
+            error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a unit of temperature.".format(raw_unit))]
             return error_list
         else:
             final = number
         string = str(final) + " K"
-        item.set_value(string)
+        item.value = string
     return error_list
 
 def do_norm_luminous_intensity(item, rule, type_rule):
     error_list = []
-    flag, number, raw_unit = split_number_unit(item.value())
+    flag, number, raw_unit = split_number_unit(item.value)
     if not flag:
-        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a luminous intensity.".format(str(item.value())))]
+        error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a luminous intensity.".format(str(item.value)))]
     else:
         unit = find_unit(raw_unit.lower(), type_rule)
         if unit == "cd":
             final = number
         elif unit==False:
-            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a unit of luminous intensity.".format(raw_unit))]
+            error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a unit of luminous intensity.".format(raw_unit))]
             return error_list
         else:
             final = number
         string = str(final) + " cd"
-        item.set_value(string)
+        item.value = string
     return error_list
 
 def do_norm_current(item, rule, type_rule):
     error_list = []
-    flag, number, raw_unit = split_number_unit(item.value())
+    flag, number, raw_unit = split_number_unit(item.value)
     if not flag:
-        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as an electrical current value.".format(str(item.value())))]
+        error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as an electrical current value.".format(str(item.value)))]
     else:
         unit = find_unit(raw_unit.lower(), type_rule)
         if unit == "a":
@@ -490,19 +490,19 @@ def do_norm_current(item, rule, type_rule):
         elif unit == "ma":
             final = number/decimal.Decimal('1000')           
         elif unit==False:
-            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a unit of electrical current.".format(raw_unit))]
+            error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a unit of electrical current.".format(raw_unit))]
             return error_list
         else:
             final = number
         string = str(final) + " A"
-        item.set_value(string)
+        item.value = string
     return error_list
     
 def do_norm_voltage(item, rule, type_rule):
     error_list = []
-    flag, number, raw_unit = split_number_unit(item.value())
+    flag, number, raw_unit = split_number_unit(item.value)
     if not flag:
-        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a voltage level.".format(str(item.value())))]
+        error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a voltage level.".format(str(item.value)))]
     else:
         unit = find_unit(raw_unit.lower(), type_rule)
         if raw_unit.lower()=="mv":
@@ -520,19 +520,19 @@ def do_norm_voltage(item, rule, type_rule):
         elif unit == "megavolt":
             final = number*decimal.Decimal('1000000')           
         elif unit==False:
-            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a unit of voltage.".format(raw_unit))]
+            error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a unit of voltage.".format(raw_unit))]
             return error_list
         else:
             final = number
         string = str(final) + " V"
-        item.set_value(string)
+        item.value = string
     return error_list
 
 def do_norm_frequency(item, rule, type_rule):
     error_list = []
-    flag, number, raw_unit = split_number_unit(item.value())
+    flag, number, raw_unit = split_number_unit(item.value)
     if not flag:
-        error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as an frequency value.".format(str(item.value())))]
+        error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as an frequency value.".format(str(item.value)))]
     else:
         unit = find_unit(raw_unit.lower(), type_rule)
         if unit == "hz":
@@ -547,28 +547,28 @@ def do_norm_frequency(item, rule, type_rule):
             if number!=0:
                 final = decimal.Decimal(1.0)/number           
             else:
-                error_list = [("[error]", "doc", item.seq(), "error: a frequency with a period of zero (0) is infinite.".format(raw_unit))]
+                error_list = [("[error]", "doc", item.seq, "error: a frequency with a period of zero (0) is infinite.".format(raw_unit))]
                 return error_list
         elif unit == "invert_ms":
             if number!=0:
                 final = decimal.Decimal(1000.0)/number           
             else:
-                error_list = [("[error]", "doc", item.seq(), "error: a frequency with a period of zero (0) is infinite.".format(raw_unit))]
+                error_list = [("[error]", "doc", item.seq, "error: a frequency with a period of zero (0) is infinite.".format(raw_unit))]
                 return error_list
         elif unit==False:
-            error_list = [("[error]", "doc", item.seq(), "unable to interpret '{}' as a unit of frequency.".format(raw_unit))]
+            error_list = [("[error]", "doc", item.seq, "unable to interpret '{}' as a unit of frequency.".format(raw_unit))]
             return error_list
         else:
             final = number
         string = str(final) + " Hz"
-        item.set_value(string)
+        item.value = string
     return error_list
 
 def do_norm_boolean(item, rule, type_rule):
     error_list = []
     result = None
-    if item.value() is not None:
-        value = unicode(item.value().lower())
+    if item.value is not None:
+        value = unicode(item.value.lower())
         true_words = type_rule["unit", "true"].list_values("*")
         false_words = type_rule["unit", "false"].list_values("*")
         if value in true_words:
@@ -576,43 +576,43 @@ def do_norm_boolean(item, rule, type_rule):
         elif value in false_words:
             result = "false"
         else:
-            error_list.append( ("[error]", "doc", item.seq(), "unable to determine if '{}' is true or false.".format(item.value())) )
+            error_list.append( ("[error]", "doc", item.seq, "unable to determine if '{}' is true or false.".format(item.value)) )
     if result:
-        item.set_value(result)
+        item.value = result
     return error_list
 
 def do_norm_integer(item, rule, type_rule):
     error_list = []
     result = None
-    if item.value() is not None:
-        value = item.value().strip()
+    if item.value is not None:
+        value = item.value.strip()
         try:
             number = decimal.Decimal(value)
             if "." in str(number):
                 number = number.quantize(decimal.Decimal('1'))
-                error_list.append( ("[warning]", "doc", item.seq(), "trimming off fractional part of number.".format(item.value())) )
-            item.set_value(str(number))
+                error_list.append( ("[warning]", "doc", item.seq, "trimming off fractional part of number.".format(item.value)) )
+            item.value = str(number)
         except Exception, e:
-            error_list.append( ("[error]", "doc", item.seq(), "unable to convert '{}' into an integer. msg: {}".format(item.value(), str(e))) )
+            error_list.append( ("[error]", "doc", item.seq, "unable to convert '{}' into an integer. msg: {}".format(item.value, str(e))) )
     return error_list
 
 def do_norm_float(item, rule, type_rule):
     error_list = []
     result = None
-    if item.value() is not None:
-        value = item.value().strip()
+    if item.value is not None:
+        value = item.value.strip()
         try:
             number = decimal.Decimal(value)
             string = sci_str(number)
-            item.set_value(string)
+            item.value = string
         except Exception, e:
-            error_list.append( ("[error]", "doc", item.seq(), "unable to convert '{}' into a floating point number. msg: {}".format(item.value(), str(e))) )
+            error_list.append( ("[error]", "doc", item.seq, "unable to convert '{}' into a floating point number. msg: {}".format(item.value, str(e))) )
     return error_list
 
 def do_norm_hexadecimal(item, rule, type_rule):
     error_list = []
-    string = str(item.value()).lower()
-    if item.value() is not None:
+    string = str(item.value).lower()
+    if item.value is not None:
         bad_chars = ""
         final = ""
         for ch in string:
@@ -621,8 +621,8 @@ def do_norm_hexadecimal(item, rule, type_rule):
             else:
                 bad_chars += ch
         if bad_chars:
-            error_list = [("[warning]", "doc", item.seq(), "'{} {}' has characters not permitted: '{}'".format(item.name(), item.value(), ", ".join(bad_chars)))]
-        item.set_value(final)
+            error_list = [("[warning]", "doc", item.seq, "'{} {}' has characters not permitted: '{}'".format(item.name, item.value, ", ".join(bad_chars)))]
+        item.value = final
     return error_list
 
 def sci_str(dec):

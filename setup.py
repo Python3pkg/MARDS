@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='MARDS',
-    version='0.1.3',
+    version='0.1.4',
     author='Maker Redux Corporation',
     author_email='johnd@makerredux.com',
     packages=['MARDS'],

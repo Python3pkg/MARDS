@@ -22,6 +22,9 @@ template abc
     search joey
         match "zed"
             extend xx
+                from sub
+        match_else
+            raise_error "We don't rightly support non-'joey zed' types around here"
 name zed
     value
         type float
