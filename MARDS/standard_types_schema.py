@@ -119,14 +119,14 @@ define_type check_list
 define_type radio_select
     describe en
         title "Radio Select"
-        body "A selected label. The label is restricted to the 'choice' elements under the 'type radio_select' definition."
+        body "A selected string. The string is restricted to the 'choice' elements under the 'type radio_select' definition."
         body ""
-        body "If the schema defines the value as _required_, then the there must be a label selected. Otherwise, the value can be empty."
+        body "If the schema defines the value as _required_, then the there must be a string selected. Otherwise, the value can be empty."
     name choice
         treatment unique
         value
             required
-            type label
+            type string
 
 define_type ignore
     describe en
@@ -154,8 +154,8 @@ define_type angle
 
 define_type file
     describe en
-        title "File Label"
-        body "A name of a file on an storage system. The name is expected to conform to a label. As such, there might be additional information added to make it a real file name when used by the local computer."
+        title "File name"
+        body "A name of a file on an storage system."
 
 define_type length
     describe en

@@ -82,7 +82,7 @@ def do_normalization(item, rule, schema):
     elif value_type=="angle":
         error_list = do_norm_angle(item, rule, type_rule)
     elif value_type=="file":
-        error_list = do_norm_label(item, rule, type_rule)
+        pass  
     elif value_type=="length":
         error_list = do_norm_length(item, rule, type_rule)
     elif value_type=="distance":
@@ -229,13 +229,9 @@ def do_norm_radio_select(item, rule, type_rule):
     error_list = []
     if item.value is not None:
         value = unicode(item.value)
-        r = label_search.search(value)
-        if r:
-            error_list = [("[error]", "doc", item.seq, "'{} {}' has characters not permitted. Detail: '{}'".format(item.name, value, str(r)))]
-        else:
-            proper_labels = rule.list_values("choice")
-            if value not in proper_labels:
-                error_list.append( ("[error]", "doc", item.seq, "selection '{}' not found in allowed choices: {}.".format(value, repr(proper_labels))) )
+        proper_labels = rule.list_values("choice")
+        if value not in proper_labels:
+            error_list.append( ("[error]", "doc", item.seq, "selection '{}' not found in allowed choices: {}.".format(value, repr(proper_labels))) )
     return error_list
 
 def do_norm_angle(item, rule, type_rule):

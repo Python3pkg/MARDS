@@ -103,7 +103,7 @@ template lumber
     name thickness
         value
             required
-            type choice
+            type radio_select
                 choice "1/4"
                 choice "1/2"
                 choice "3/4"
@@ -126,7 +126,7 @@ template lumber
     name species
         value
             required
-            type choice
+            type radio_select
                 choice oak
                 choice pine
                 choice walnut
@@ -149,12 +149,12 @@ template lumber
     name surface_finish
         value
             required
-            type choice
-            choice rough
-            choice S1S
-            choice S2S
-            choice S3S
-            choice S4S 
+            type radio_select
+                choice rough
+                choice S1S
+                choice S2S
+                choice S3S
+                choice S4S 
         
 template wood_panel
     describe en 
@@ -162,7 +162,7 @@ template wood_panel
     name top_surface
         value
             required
-            type choice
+            type radio_select
                 choice oak
                 choice pine
                 choice walnut
@@ -185,7 +185,7 @@ template wood_panel
 
     name bottom_surface
         value
-            type choice
+            type radio_select
                 choice oak
                 choice pine
                 choice walnut
@@ -208,13 +208,13 @@ template wood_panel
     name top_quality
         value
             required
-            type choice
+            type radio_select
                 choice fine
                 choice medium
                 choice course
     name bottom_quality
         value
-            type choice
+            type radio_select 
                 choice fine
                 choice medium
                 choice course
@@ -232,7 +232,7 @@ template wood_panel
     name core
         value
             required
-            type choice
+            type radio_select
                 choice MDF
                 choice layer
 

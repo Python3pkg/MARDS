@@ -18,7 +18,7 @@ template package
         value
             required
             type radio_select
-                choice peanut
+                choice "starch_peanuts"
                 choice preform_styro
         describe en
             title "material to fill around shipped parts"
