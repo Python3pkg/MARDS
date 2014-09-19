@@ -2,7 +2,9 @@
 #
 # MARDS data serialization library
 #
-# Version 0.1.5
+# Version 0.1.6
+
+MARDS_VER_CURRENT = "1.0"
 
 from rolne import rolne
 import os
@@ -11,15 +13,15 @@ import standard_types as st
 import mards_library as ml
 
 def string_to_rolne(string, schema=None, schema_file=None):
+    global MARDS_VER_CURRENT
     schema_dir = os.getcwd()
     if schema_file:
         with open(schema_file, "r") as fh:
             schema = fh.read()
             schema_dir = os.path.dirname(os.path.realpath(schema_file))
     if not schema:
-        schema = "#!MARDS_schema_en_1.0\n    exclusive false\n"
-    result, error_list =  ml.MARDS_to_rolne(doc=string, schema=schema, schema_dir=schema_dir)
-    return result, error_list
+        schema = "#!MARDS_schema_en_"+MARDS_VER_CURRENT+"\n    exclusive false\n"
+    return ml.MARDS_to_rolne(doc=string, schema=schema, schema_dir=schema_dir)
 
 def string_to_python(doc=None, schema=None, context="doc", tab_strict=False):
     r, error_list = MARDS_to_rolne(doc, schema, context=context, tab_strict=tab_strict)
@@ -31,6 +33,23 @@ def string_to_python(doc=None, schema=None, context="doc", tab_strict=False):
         result = r.dump()
     return result, error_list
 
+def compile(doc_rolne, schema=None, schema_file=None, renumber=False):
+    global MARDS_VER_CURRENT
+    if type(doc_rolne) is not rolne:
+        raise TypeError, "first parameter must be a rolne"
+    schema_dir = os.getcwd()
+    if schema_file:
+        with open(schema_file, "r") as fh:
+            schema = fh.read()
+            schema_dir = os.path.dirname(os.path.realpath(schema_file))
+    if not schema:
+        schema = "#!MARDS_schema_en_"+MARDS_VER_CURRENT+"\n    exclusive false\n"
+    schema_rolne, schema_errors = ml.SCHEMA_to_rolne(schema, prefix="", schema_dir=schema_dir)
+    copy = doc_rolne.copy(seq_prefix="", renumber=renumber)
+    new_rolne, doc_errors = ml.schema_rolne_check(copy, schema_rolne)
+    all_errors = schema_errors + doc_errors
+    return new_rolne, all_errors
+    
 def rolne_to_string(r, tab_size=4, quote_all=True):
     result = ""
     #print r.data

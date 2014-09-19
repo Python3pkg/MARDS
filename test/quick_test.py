@@ -16,12 +16,12 @@ blink "zippy_b.oing"
     rate 23
     abc beep beep 
         joex 44ft
-        joey zedp
+        joey zed
         joeBxx 5 inches
 item "broom"
     size 33
     color blue
-        intensity 33%
+          intensity 33%
         intensity 2
 item "brush"
     size 2
@@ -29,7 +29,10 @@ zed 1.234e+2
 '''
 
 #x,e = MARDS.ml.SCHEMA_to_rolne(MARDS.st.standard_types_text)
-x,e = MARDS.string_to_rolne(doc, schema_file="temp/simple.MARDS-schema")
+# x,e = MARDS.string_to_rolne(doc, schema_file="temp/simple.MARDS-schema")
+x,e = MARDS.string_to_rolne(doc)
+x,e = MARDS.compile(x, schema_file="temp/simple.MARDS-schema", renumber=True)
+
 print "FINAL:\n"
 print x._explicit()
 print "ERRORS:\n"

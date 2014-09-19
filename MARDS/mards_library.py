@@ -5,8 +5,12 @@
 #
 
 from rolne import rolne
+import string
 
-def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False, key_open=False, prefix="", schema_dir=None, suppress_schema=False):
+
+# Core priciple: if strict=False and there is no schema, there will NEVER
+# be an error.
+def MARDS_to_rolne(doc=None, schema=None, context="doc", strict=False, key_open=False, prefix="", schema_dir=None, suppress_schema=False):
     result = rolne()
     error_list = []
     if doc is None:
@@ -23,7 +27,7 @@ def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False, key_o
     last_spot = pointer_list[0]
     last_nvi = range(50)
     for ctr, line in enumerate(doc.split("\n")):
-        (indent, key, value, error) = parse_line(line, tab_list, tab_strict=tab_strict, key_open=key_open)
+        (indent, key, value, error) = parse_line(line, tab_list, strict=strict, key_open=key_open)
         if error:
             t = ("[error]", context, ctr, error)
             error_list.append(t)
@@ -37,9 +41,14 @@ def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False, key_o
                     pointer_list[indent] = last_spot
                     current = indent
                 else:
-                    t = ("[error]", context, ctr, "tab stop jumped ahead too far")
-                    error_list.append(t)
-                    break
+                    if strict:
+                        t = ("[error]", context, ctr, "tab stop jumped ahead too far")
+                        error_list.append(t)
+                        break
+                    else:
+                        indent = current+1
+                        pointer_list[indent] = last_spot
+                        current = indent
                 index = pointer_list[indent].append_index(key, value, seq=prefix+str(ctr))
                 last_spot = pointer_list[indent][key, value, index]
                 last_nvi[indent]=(key, value, index)
@@ -48,8 +57,8 @@ def MARDS_to_rolne(doc=None, schema=None, context="doc", tab_strict=False, key_o
         error_list.extend(schema_errors)
     return result, error_list
 
-    
-def parse_line(line, tab_list, tab_strict=False, key_open=False):
+# if strict==False, there should NEVER be an error returned.   
+def parse_line(line, tab_list, strict=False, key_open=False):
     indent = None
     key = None
     value = None
@@ -67,16 +76,22 @@ def parse_line(line, tab_list, tab_strict=False, key_open=False):
                 return (indent, key, value, error) # skip line if all whitespaces
             elif c=="#" and key_open==False:
                 return (indent, key, value, error) # skip line if starts with # comment symbol
-            elif len(c.strip())==0:
+            elif len(c.strip())==0 and strict:
                 return (indent, key, value, "non-space whitespace character found before key")
+            elif c=="\t":
+                space_ctr += 4
+            elif c in string.whitespace:
+                space_ctr += 1
             else:
                 key=c
                 mode = 1 # key
         elif mode==1: # key
             if c==" ":
                 mode = 2 # pre-value
-            elif len(c.strip())==0:
+            elif len(c.strip())==0 and strict:
                 return (indent, key, value, "non-space whitespace character found inside key")
+            elif c in string.whitespace:
+                mode = 2 #pre-value
             else:
                 key += c
         elif mode==2: # pre-value
@@ -99,7 +114,7 @@ def parse_line(line, tab_list, tab_strict=False, key_open=False):
     #
     # calculate indent
     #
-    if tab_strict:
+    if strict:
         indent = int(space_ctr / 4)
         if space_ctr % 4 != 0:
             snap = line.strip()[:20]
@@ -227,7 +242,7 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
     ################################
     # CONVERT TO A ROLNE
     ################################
-    schema, error_list = MARDS_to_rolne(doc, context="schema", tab_strict=True, key_open=True, prefix=prefix, suppress_schema=True)
+    schema, error_list = MARDS_to_rolne(doc, context="schema", strict=True, key_open=True, prefix=prefix, suppress_schema=True)
     ################################
     #  FIRST PASS SYNTAX CHECKING
     #
@@ -611,7 +626,7 @@ def sub_schema_requirements(doc, orig_schema):
                 if name_rule.has("value"):
                     newseq = doc.append(target_name, name_rule["value"].get_value("default"), seq='auto'+str(req_ctr))
                 else:
-                    newseq = doc.append(target, None, seq="auto"+str(req_ctr))
+                    newseq = doc.append(target_name, None, seq="auto"+str(req_ctr))
                 error_list.append( ("[warning]", "doc", newseq, "an entry for '{}' is required so it was automaticaly inserted.".format(target_name)) )
                 req_ctr += 1
         # check 'value' (if exists)
