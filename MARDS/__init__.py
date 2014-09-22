@@ -2,7 +2,7 @@
 #
 # MARDS data serialization library
 #
-# Version 0.1.6
+# Version 0.1.7
 
 MARDS_VER_CURRENT = "1.0"
 

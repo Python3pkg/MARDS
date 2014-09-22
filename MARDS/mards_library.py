@@ -328,7 +328,7 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
                         error_list.append ( ("[error]", "schema", ies, str(e)) )
                         subdata = None
                 if subdata:
-                    sr,e = SCHEMA_to_rolne(subdata, prefix=prx)
+                    sr,e = SCHEMA_to_rolne(subdata, prefix=prx, schema_dir=schema_dir)
                     schema.extend(sr)  #TODO: 'prepend' rather than 'extend'?
                     # TODO: convince rolne to retain line numbering in sr
                     error_list.extend(e)
