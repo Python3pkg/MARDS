@@ -1,4 +1,6 @@
 #!MARDS_schema_en_1.0 blah
+    import subsub
+        local
 
 
 name galaxy
@@ -10,3 +12,8 @@ template xx
         value
             type length
     
+template foo
+    required
+    treatment unique
+    value
+        required

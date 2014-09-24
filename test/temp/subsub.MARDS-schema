@@ -1,0 +1,8 @@
+#!MARDS_schema_en_1.0 subblah
+
+name rabbit_hole
+
+template rabbit
+    value
+        type float
+    name pellet

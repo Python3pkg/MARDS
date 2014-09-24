@@ -238,7 +238,9 @@ def value_output(value, quote_method='all', none_handle='strict'):
     return
 
     
-def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
+def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
+    if prefix is None:
+        prefix = ""
     ################################
     # CONVERT TO A ROLNE
     ################################
@@ -325,16 +327,21 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
                         with open(file_loc, 'r') as file:
                             subdata = file.read()
                     except IOError, e: 
-                        error_list.append ( ("[error]", "schema", ies, str(e)) )
-                        subdata = None
+                        file_loc = schema_dir+"/"+file_loc
+                        try:
+                            with open(file_loc, 'r') as file:
+                                subdata = file.read()
+                        except IOError, e: 
+                            error_list.append ( ("[error]", "schema", ies, str(e)) )
+                            subdata = None
                 if subdata:
+                    if prefix:
+                        prx = prefix+prx
                     sr,e = SCHEMA_to_rolne(subdata, prefix=prx, schema_dir=schema_dir)
-                    schema.extend(sr)  #TODO: 'prepend' rather than 'extend'?
-                    # TODO: convince rolne to retain line numbering in sr
+                    schema.extend(sr, retain_seq=True)
                     error_list.extend(e)
             else:
                 error_list.append( ("[error]", "schema", ies, "unable to locate import method for '{}'".format(iev)) )
-        # schema.seq_delete(es) # <- keep this as the header flags are later used.
     #################################
     #
     # MAKE A COPY AND BUILD INDEX
@@ -343,14 +350,28 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
     #################################
     copy = schema.copy(seq_prefix="", seq_suffix="")
     name_seq = {}
-    name_recurs = {}
+    name_seq[""] = {}
+    if prefix:
+        prefix_subtract = len(prefix)+1
+    else:
+        prefix_subtract = 0
     for key in schema.grep():
         (en, ev, _, es) = key
         if en in ["name", "template"]:
-            if ev in name_seq:
-                name_seq[ev]=False
+            temp = es[prefix_subtract:]
+            levels = temp.split("/")
+            if levels==1:
+                subidx = levels[0]
+                subimport = ""
             else:
-                name_seq[ev]=es
+                subidx = levels[-1]
+                subimport = "/".join(levels[0:-1])
+            if subimport not in name_seq:
+                name_seq[subimport] = {}
+            if ev in name_seq[subimport]:
+                name_seq[subimport][ev]=False
+            else:
+                name_seq[subimport][ev]=es
     #################################
     # IMPLEMENT 'template'
     #
@@ -375,24 +396,36 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
     safety_ctr=0
     while schema_list and safety_ctr<20:
         for (_, ev, _, es) in schema_list:
-            if ev in name_seq:
-                if name_seq[ev] is False:
-                    t = ("[error]", "schema", es, "'name {}' found in schema multiple times".format(ev))
-                    error_list.append(t)
-                    schema.seq_delete(es)
-                else:
-                    src = name_seq[ev]
-                    depth_desired = 1
-                    line = schema.seq_lineage(es)
-                    new_depth = len(line) 
-                    prx = src+".i"+str(new_depth)+"."
-                    if name_seq[ev] in line:
-                        error_list.append(("[error]", "schema", es, "'insert {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
+            item = schema.at_seq(es)
+            sub_doc = item.get_value('from') or ""
+            if sub_doc in name_seq:
+                if ev in name_seq[sub_doc]:
+                    if name_seq[sub_doc][ev] is False:
+                        t = ("[error]", "schema", es, "'name {}' found in schema multiple times".format(ev))
+                        error_list.append(t)
                         schema.seq_delete(es)
                     else:
-                        schema.seq_replace(es, copy.at_seq(src), prx)
+                        src = name_seq[sub_doc][ev]
+                        depth_desired = 1
+                        line = schema.seq_lineage(es)
+                        new_depth = len(line) 
+                        prx = src+"."
+                        if name_seq[sub_doc][ev] in line:
+                            error_list.append(("[error]", "schema", es, "'insert {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
+                            schema.seq_delete(es)
+                        else:
+                            schema.seq_replace(es, copy.at_seq(src), prx)
+                else:
+                    # print "jj", name_seq
+                    if sub_doc:
+                        t = ("[error]", "schema", es, "on insert, a name or template for '{}' not found in schema '{}'".format(ev, sub_doc))
+                    else:
+                        t = ("[error]", "schema", es, "on insert, a name or template for '{}' not found in local schema".format(ev))
+                    error_list.append(t)
+                    schema.seq_delete(es)
             else:
-                t = ("[error]", "schema", es, "'name {}' not found in schema".format(ev))
+                t = ("[error]", "schema", es, "an import for '{}' not found in schema".format(sub_doc))
+                print "jj", name_seq
                 error_list.append(t)
                 schema.seq_delete(es)
         schema_list = schema.grep("insert")
@@ -402,35 +435,35 @@ def SCHEMA_to_rolne(doc=None, prefix="", schema_dir=None):
     # IMPLEMENT 'extend'
     #
     #################################
-    schema_list = schema.grep("extend")
-    safety_ctr=0
-    while schema_list and safety_ctr<20:
-        for (_, ev, _, es) in schema_list:
-            if ev in name_seq:
-                if name_seq[ev] is False:
-                    t = ("[error]", "schema", es, "'name {}' found in schema multiple times".format(ev))
-                    error_list.append(t)
-                    schema.seq_delete(es)
-                else:
-                    src = name_seq[ev]
-                    depth_desired = 1
-                    line = schema.seq_lineage(es)
-                    new_depth = len(line) 
-                    prx = src+".e"+str(new_depth)+"."
-                    if name_seq[ev] in line:
-                        error_list.append(("[error]", "schema", es, "'extend {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
-                        schema.seq_delete(es)
-                    else:
-                        parent = schema.at_seq(schema.seq_parent(es))
-                        children = copy.at_seq(src)
-                        parent.extend(children, prefix=prx)
-                        schema.seq_delete(es)
-            else:
-                t = ("[error]", "schema", es, "'name {}' not found in schema".format(ev))
-                error_list.append(t)
-                schema.seq_delete(es)
-        schema_list = schema.grep("extend")
-        safety_ctr += 1
+    # schema_list = schema.grep("extend")
+    # safety_ctr=0
+    # while schema_list and safety_ctr<20:
+        # for (_, ev, _, es) in schema_list:
+            # if ev in name_seq:
+                # if name_seq[ev] is False:
+                    # t = ("[error]", "schema", es, "'name {}' found in schema multiple times".format(ev))
+                    # error_list.append(t)
+                    # schema.seq_delete(es)
+                # else:
+                    # src = name_seq[ev]
+                    # depth_desired = 1
+                    # line = schema.seq_lineage(es)
+                    # new_depth = len(line) 
+                    # prx = src+".e"+str(new_depth)+"."
+                    # if name_seq[ev] in line:
+                        # error_list.append(("[error]", "schema", es, "'extend {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
+                        # schema.seq_delete(es)
+                    # else:
+                        # parent = schema.at_seq(schema.seq_parent(es))
+                        # children = copy.at_seq(src)
+                        # parent.extend(children, prefix=prx)
+                        # schema.seq_delete(es)
+            # else:
+                # t = ("[error]", "schema", es, "'name {}' not found in schema".format(ev))
+                # error_list.append(t)
+                # schema.seq_delete(es)
+        # schema_list = schema.grep("extend")
+        # safety_ctr += 1
     #################################
     #
     # IMPLEMENT 'resurse' recursion

@@ -20,7 +20,7 @@ template abc
             type length
     name joey
     search joey
-        match "zed"
+        match "zark"
             extend xx
                 from sub
         match_else
@@ -28,6 +28,11 @@ template abc
 name zed
     value
         type float
+    name bob
+    search bob
+        match "55"
+            insert rabbit
+                from sub/subsub
 name item
     treatment unique
     value
