@@ -351,15 +351,12 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
     copy = schema.copy(seq_prefix="", seq_suffix="")
     name_seq = {}
     name_seq[""] = {}
-    if prefix:
-        prefix_subtract = len(prefix)+1
-    else:
-        prefix_subtract = 0
     for key in schema.grep():
         (en, ev, _, es) = key
         if en in ["name", "template"]:
-            temp = es[prefix_subtract:]
-            levels = temp.split("/")
+            if es.startswith(prefix):
+                es = es[len(prefix):]
+            levels = es.split("/")
             if levels==1:
                 subidx = levels[0]
                 subimport = ""
@@ -405,7 +402,7 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
                         error_list.append(t)
                         schema.seq_delete(es)
                     else:
-                        src = name_seq[sub_doc][ev]
+                        src = prefix+name_seq[sub_doc][ev]
                         depth_desired = 1
                         line = schema.seq_lineage(es)
                         new_depth = len(line) 
@@ -446,7 +443,7 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
                         error_list.append(t)
                         schema.seq_delete(es)
                     else:
-                        src = name_seq[sub_doc][ev]
+                        src = prefix+name_seq[sub_doc][ev]
                         depth_desired = 1
                         line = schema.seq_lineage(es)
                         new_depth = len(line) 
@@ -456,10 +453,14 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
                             schema.seq_delete(es)
                         else:
                             parent = schema.at_seq(schema.seq_parent(es))
-                            children = copy.at_seq(src).copy(seq_prefix="", seq_suffix="")
-                            if children.has('value'):
-                                del children['value']
-                            parent.extend(children, prefix=prx)
+                            children = copy.at_seq(src)
+                            if children:
+                                children = children.copy(seq_prefix="", seq_suffix="")
+                                if children.has('value'):
+                                    del children['value']
+                                parent.extend(children, prefix=prx)
+                            else:
+                                error_list.append(("[error]", "schema", es, "internal empty child error src='{}'. ".format(src)))
                             schema.seq_delete(es)
                 else:
                     if sub_doc:
@@ -469,6 +470,9 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
                     error_list.append(t)
                     schema.seq_delete(es)
             else:
+                print prefix
+                for s in name_seq:
+                    print "   ",s
                 t = ("[error]", "schema", es, "an import for '{}' not found in schema".format(sub_doc))
                 error_list.append(t)
                 schema.seq_delete(es)
@@ -492,7 +496,7 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
                         error_list.append(t)
                         schema.seq_delete(es)
                     else:
-                        src = name_seq[sub_doc][ev]
+                        src = prefix+name_seq[sub_doc][ev]
                         depth_desired = item.get_value("limit")
                         if depth_desired is None:
                             depth_desired = 2
