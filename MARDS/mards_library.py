@@ -416,7 +416,6 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
                         else:
                             schema.seq_replace(es, copy.at_seq(src), prx)
                 else:
-                    # print "jj", name_seq
                     if sub_doc:
                         t = ("[error]", "schema", es, "on insert, a name or template for '{}' not found in schema '{}'".format(ev, sub_doc))
                     else:
@@ -425,7 +424,6 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
                     schema.seq_delete(es)
             else:
                 t = ("[error]", "schema", es, "an import for '{}' not found in schema".format(sub_doc))
-                print "jj", name_seq
                 error_list.append(t)
                 schema.seq_delete(es)
         schema_list = schema.grep("insert")
@@ -435,35 +433,47 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
     # IMPLEMENT 'extend'
     #
     #################################
-    # schema_list = schema.grep("extend")
-    # safety_ctr=0
-    # while schema_list and safety_ctr<20:
-        # for (_, ev, _, es) in schema_list:
-            # if ev in name_seq:
-                # if name_seq[ev] is False:
-                    # t = ("[error]", "schema", es, "'name {}' found in schema multiple times".format(ev))
-                    # error_list.append(t)
-                    # schema.seq_delete(es)
-                # else:
-                    # src = name_seq[ev]
-                    # depth_desired = 1
-                    # line = schema.seq_lineage(es)
-                    # new_depth = len(line) 
-                    # prx = src+".e"+str(new_depth)+"."
-                    # if name_seq[ev] in line:
-                        # error_list.append(("[error]", "schema", es, "'extend {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
-                        # schema.seq_delete(es)
-                    # else:
-                        # parent = schema.at_seq(schema.seq_parent(es))
-                        # children = copy.at_seq(src)
-                        # parent.extend(children, prefix=prx)
-                        # schema.seq_delete(es)
-            # else:
-                # t = ("[error]", "schema", es, "'name {}' not found in schema".format(ev))
-                # error_list.append(t)
-                # schema.seq_delete(es)
-        # schema_list = schema.grep("extend")
-        # safety_ctr += 1
+    schema_list = schema.grep("extend")
+    safety_ctr=0
+    while schema_list and safety_ctr<20:
+        for (_, ev, _, es) in schema_list:
+            item = schema.at_seq(es)
+            sub_doc = item.get_value('from') or ""
+            if sub_doc in name_seq:
+                if ev in name_seq[sub_doc]:
+                    if name_seq[sub_doc][ev] is False:
+                        t = ("[error]", "schema", es, "'name {}' found in schema multiple times".format(ev))
+                        error_list.append(t)
+                        schema.seq_delete(es)
+                    else:
+                        src = name_seq[sub_doc][ev]
+                        depth_desired = 1
+                        line = schema.seq_lineage(es)
+                        new_depth = len(line) 
+                        prx = src+"."
+                        if name_seq[sub_doc][ev] in line:
+                            error_list.append(("[error]", "schema", es, "'extend {}' ends up forming a loop. See lines {}. ".format(ev, ",".join(line))))
+                            schema.seq_delete(es)
+                        else:
+                            parent = schema.at_seq(schema.seq_parent(es))
+                            children = copy.at_seq(src).copy(seq_prefix="", seq_suffix="")
+                            if children.has('value'):
+                                del children['value']
+                            parent.extend(children, prefix=prx)
+                            schema.seq_delete(es)
+                else:
+                    if sub_doc:
+                        t = ("[error]", "schema", es, "on extend, a name or template for '{}' not found in schema '{}'".format(ev, sub_doc))
+                    else:
+                        t = ("[error]", "schema", es, "on extend, a name or template for '{}' not found in local schema".format(ev))
+                    error_list.append(t)
+                    schema.seq_delete(es)
+            else:
+                t = ("[error]", "schema", es, "an import for '{}' not found in schema".format(sub_doc))
+                error_list.append(t)
+                schema.seq_delete(es)
+        schema_list = schema.grep("extend")
+        safety_ctr += 1
     #################################
     #
     # IMPLEMENT 'resurse' recursion
@@ -473,31 +483,45 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
     safety_ctr=0
     while schema_list and safety_ctr<20:
         for (_, ev, _, es) in schema_list:
-            if ev in name_seq:
-                if name_seq[ev] is False:
-                    t = ("[error]", "schema", es, "'name {}' found in schema multiple times".format(ev))
+            item = schema.at_seq(es)
+            sub_doc = item.get_value('from') or ""
+            if sub_doc in name_seq:
+                if ev in name_seq[sub_doc]:
+                    if name_seq[sub_doc][ev] is False:
+                        t = ("[error]", "schema", es, "'name {}' found in schema multiple times".format(ev))
+                        error_list.append(t)
+                        schema.seq_delete(es)
+                    else:
+                        src = name_seq[sub_doc][ev]
+                        depth_desired = item.get_value("limit")
+                        if depth_desired is None:
+                            depth_desired = 2
+                        else:
+                            try:
+                                depth_desired = abs(int(depth_desired))
+                            except:
+                                depth_desired = 2
+                                error_list.append(("[error]", "schema", es, "recurse limit is not a positive integer."))
+                        line = schema.seq_lineage(es)
+                        new_depth = safety_ctr+1
+                        prx = src+".r"+str(new_depth)+"."
+                        if name_seq[sub_doc][ev] in line:
+                            if new_depth<=depth_desired:
+                                schema.seq_replace(es, copy.at_seq(src), prx)
+                            else:
+                                schema.seq_delete(es)
+                        else:
+                            error_list.append(("[error]", "schema", es, "'recurse {}' is not recursive".format(ev)))
+                            schema.seq_delete(es)
+                else:
+                    if sub_doc:
+                        t = ("[error]", "schema", es, "on recurse, a name or template for '{}' not found in schema '{}'".format(ev, sub_doc))
+                    else:
+                        t = ("[error]", "schema", es, "on recurse, a name or template for '{}' not found in local schema".format(ev))
                     error_list.append(t)
                     schema.seq_delete(es)
-                else:
-                    src = name_seq[ev]
-                    depth_desired = schema.at_seq(es).get_value("limit")
-                    if depth_desired is None:
-                        depth_desired = 2
-                    else:
-                        depth_desired = int(depth_desired)
-                    line = schema.seq_lineage(es)
-                    new_depth = len(line)-1 
-                    prx = src+".r"+str(new_depth)+"."
-                    if name_seq[ev] in line:
-                        if new_depth<=depth_desired:
-                            schema.seq_replace(es, copy.ptr_to_seq(src), prx)
-                        else:
-                            schema.seq_delete(es)
-                    else:
-                        error_list.append(("[error]", "schema", es, "'recurse {}' is not recursive".format(ev)))
-                        schema.seq_delete(es)
             else:
-                t = ("[error]", "schema", es, "'name {}' not found in schema".format(ev))
+                t = ("[error]", "schema", es, "an import for '{}' not found in schema".format(sub_doc))
                 error_list.append(t)
                 schema.seq_delete(es)
         schema_list = schema.grep("recurse")
@@ -577,28 +601,51 @@ def check_schema_coverage(doc, schema):
 
 def schema_match_up(doc, schema):
     '''
-    SCHEMA mini-recompile for SEARCH and MATCH functions
+    SCHEMA mini-recompile for:
+
+      each SEARCH then MATCH function
+      each TYPE then CHOICE function
     
     given the doc, it returns a schema copy that implements the match
     '''
-    search_list = schema.list_keys("search")
+    copy = schema.copy(seq_prefix="", seq_suffix="")
+    copy = _schema_match_up_search(doc, copy)
+    copy = _schema_match_up_type_choice(doc, copy)
+    return copy
+
+def _schema_match_up_search(doc, copy):
+    search_list = copy.list_keys("search")
     if search_list:
-        copy = schema.copy(seq_prefix="match_", seq_suffix="")
         for skey in search_list:
             (_, target, _) = skey
             doc_value = doc.get_value(target)
             match_list = copy[skey].list_values("match")
             if doc_value in match_list:
-                copy.extend(copy[skey]["match", doc_value])
+                copy.extend(copy[skey]["match", doc_value], prefix="match.")
                 del copy[skey]
-                copy = schema_match_up(doc, copy)
+                copy = _schema_match_up_search(doc, copy)
             else:
                 if copy[skey].has("match_else"):
-                    copy.extend(copy[skey]["match_else"])
+                    copy.extend(copy[skey]["match_else"], prefix="match.")
                     del copy[skey]
-                    copy = schema_match_up(doc, copy)
-        return copy
-    return schema
+                    copy = _schema_match_up_search(doc, copy)
+    return copy
+
+def _schema_match_up_type_choice(doc, copy):
+    choices = copy.only([("name",),("value",),("type",),("choice",)])
+    for item in choices:
+        target = item.value
+        doc_value = doc.get_value(target)
+        choice_list = item["value"]["type"].list_tuples("choice")
+        seq = None
+        for (en, ev, ei, es) in choice_list:
+            if doc_value==ev:
+                seq = es
+                break
+        if seq:
+            copy["name", target].extend(copy.at_seq(seq), prefix="choice.")
+    return copy
+
     
 def sub_schema_treatments(doc, orig_schema):
     schema = schema_match_up(doc, orig_schema)

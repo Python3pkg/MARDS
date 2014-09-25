@@ -24,14 +24,14 @@ template abc
             extend xx
                 from sub
         match_else
-            raise_error "We don't rightly support non-'joey zed' types around here"
+            raise_error "We don't rightly support non-'joey zark' types around here"
 name zed
     value
         type float
     name bob
     search bob
         match "55"
-            insert rabbit
+            extend rabbit
                 from sub/subsub
 name item
     treatment unique
@@ -42,13 +42,18 @@ name item
         treatment one
         value
             type mass
+        recurse size
+            limit 1
     name color
         treatment unique
         value
             type radio_select
                 choice "blue"
+                    name blue_cave
                 choice "red"
+                    name red_cave
                 choice "yellow"
+                    name yellow_cave
         name intensity
             value
                 type percent
