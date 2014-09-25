@@ -615,20 +615,21 @@ def schema_match_up(doc, schema):
 
 def _schema_match_up_search(doc, copy):
     search_list = copy.list_keys("search")
-    if search_list:
+    while search_list:
         for skey in search_list:
             (_, target, _) = skey
             doc_value = doc.get_value(target)
             match_list = copy[skey].list_values("match")
             if doc_value in match_list:
                 copy.extend(copy[skey]["match", doc_value], prefix="match.")
-                del copy[skey]
-                copy = _schema_match_up_search(doc, copy)
+                # del copy[skey]
+                # copy = _schema_match_up_search(doc, copy)
             else:
                 if copy[skey].has("match_else"):
                     copy.extend(copy[skey]["match_else"], prefix="match.")
-                    del copy[skey]
-                    copy = _schema_match_up_search(doc, copy)
+                    # copy = _schema_match_up_search(doc, copy)
+            del copy[skey]
+        search_list = copy.list_keys("search")
     return copy
 
 def _schema_match_up_type_choice(doc, copy):

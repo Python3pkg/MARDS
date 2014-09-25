@@ -21,10 +21,15 @@ template abc
     name joey
     search joey
         match "zark"
-            extend xx
-                from sub
+            search joex
+                match 44ft
+                    extend xx
+                        from sub
         match_else
             raise_error "We don't rightly support non-'joey zark' types around here"
+    search joex
+        match "44ft"
+            name joex_baloo
 name zed
     value
         type float

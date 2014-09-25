@@ -18,6 +18,7 @@ blink "zippy_b.oing"
         joex 44ft
         joey zark
         joeBxx 5 inches
+        joex_baloo 9
 item "broom"
     size 33
     color red
