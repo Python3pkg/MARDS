@@ -5,6 +5,7 @@
 #
 
 from rolne import rolne
+from MARDS import st
 
 # the breakdown_rolne contains instructions on how to "break down" the files used in the final docs.
 #
@@ -66,33 +67,48 @@ def parse_rst(breakdown, schema_rolne, docs, language):
                 current.append('')
         # items list
         if len(schema_sub.only('name')):
-            current.append('.. list-table:: Attributes')
-            current.append('   :widths: 10 10 20 60')
-            current.append('   :header-rows: 1')
+            current.append("''''''''''")
+            current.append("Attributes")
+            current.append("''''''''''")
             current.append('')
-            current.append('   * - Format')
-            current.append('     - Title')
-            current.append('     - Abstract')
-            current.append('     - Details')
-            for item in schema_sub.only('name'):
-                if str(item.value)[0:2]!="__":
-                    if item.has([('value'),('type')]):
-                        type = item['value'].get_value('type')
-                    else:
-                        type = 'string'
-                    current.append('   * - '+str(item.value)+' *'+type+'*')
-                    if item.has(('describe', language)):
-                        d = item['describe', language]
-                        if d.has('title'):
-                            current.append('     - '+d.get_value('title'))
-                        if d.has('abstract'):
-                            current.append('     - '+d.get_value('abstract'))
-                        if d.has('body'):
-                            current.append('     - '+d.get_value('body'))
-        if len(schema_sub.only('sub')):
-            for subsub in schema_sub.only('sub'):
-                parse_rst(subsub, schema_sub, docs, language)
+            current.extend(rst_list_attributes_recursive(schema_sub.only('name'), language))
+        #if len(schema_sub.only('sub')):
+        #    for subsub in schema_sub.only('sub'):
+        #        parse_rst(subsub, schema_sub, docs, language)
     return
 
+def rst_list_attributes_recursive(schema, language):
+    result = []
+    for item in schema:
+        if str(item.value)[0:2]!="__":
+            if item.has([('value'),('type')]):
+                type = item['value'].get_value('type')
+            else:
+                type = 'string'
+            result.append(str(item.value)+' : '+type)
+            if item.has('value'):
+                temp_list = st.rst(item['value'])
+                for line in temp_list:
+                    result.append('    '+line)
+            if item.has(('describe', language)):
+                d = item['describe', language]
+                if d.has('title'):
+                    result.append('    title: '+d.get_value('title'))
+                    result.append('    ')
+                if d.has('abstract'):
+                    result.append('    abstract: '+d.get_value('abstract'))
+                    result.append('    ')
+                if d.has('body'):
+                    result.append('    body: '+d.get_value('body'))
+                    result.append('    ')
+            if item.has('name'):
+                temp_list = rst_list_attributes_recursive(item.only('name'), language)
+                result.append('    The following items can be below this attribute:')
+                result.append('    ')
+                for line in temp_list:
+                    result.append('    '+line)
+                result.append('    ')
+            result.append('    ')
+    return result
     
 # eof: MARDS\doc.py

@@ -118,6 +118,70 @@ def do_normalization(item, rule, schema):
             error_list = [ ("[error]", "schema", rule.seq, "'type {}' unknown.".format(value_type)) ]
     return error_list
     
+def rst(value_rule):
+    '''Given the data and type information, generate a list of strings for
+    insertion into a RST document.
+    '''
+    lines = []
+    if value_rule.has('type'):
+        value_type = value_rule['type'].value
+    else:
+        value_type = 'string'
+    if value_type=='ignore':
+        pass
+    else:
+        lines.append('A *'+value_type+'* value is expected.')
+        lines.append('')
+    if value_type=="string":
+        pass
+    elif value_type=="label":
+        pass
+    elif value_type=="price":
+        pass
+    elif value_type=="qty":
+        pass
+    elif value_type=="percent":
+        pass
+    elif value_type=="check_list":
+        pass
+    elif value_type=="radio_select":
+        pass
+    elif value_type=="ignore":
+        pass
+    elif value_type=="unit":
+        pass
+    elif value_type=="angle":
+        pass
+    elif value_type=="file":
+        pass
+    elif value_type=="length":
+        pass
+    elif value_type=="distance":
+        pass
+    elif value_type=="duration":
+        pass
+    elif value_type=="mass":
+        pass
+    elif value_type=="temperature":
+        pass
+    elif value_type=="luminous_intensity":
+        pass
+    elif value_type=="current":
+        pass
+    elif value_type=="voltage":
+        pass
+    elif value_type=="frequency":
+        pass
+    elif value_type=="boolean":
+        pass
+    elif value_type=="integer":
+        pass
+    elif value_type=="float":
+        pass
+    elif value_type=="hexadecimal":
+        pass
+    return lines
+    
 label_search = regex.compile(ur"[\p{Z}\p{P}^](?<!_)(?<!\.)(?<!\*)", regex.UNICODE)
 
 def do_norm_label(item, rule, type_rule):
