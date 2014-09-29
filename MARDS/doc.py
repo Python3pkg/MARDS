@@ -14,26 +14,46 @@ def generate_rst_files(schema_rolne, breakdown_rolne, dest_dir, language="en"):
     root = breakdown_rolne["root"]
     docs[root.value] = []
     # make subs
-    for sub in root.only("sub"):
-        if sub.get_value("new_doc")=="true":
-            docs[sub.value] = []
-            current = docs[sub.value]
-        else:
-            current = doc[root.value]
+    parse_rst(root, schema_rolne, docs, language)
+    # generate everything
+    for key in docs:
+        fh = open(dest_dir+"/"+key+".rst", 'w')
+        for line in docs[key]:
+            fh.write(line)
+            fh.write('\n')
+        fh.close()
+    return
+
+def parse_rst(breakdown, schema_rolne, docs, language):
+    for sub in breakdown.only('sub'):
+        docs[sub.value] = []
+        current = docs[sub.value]
         schema_sub = schema_rolne['name', sub.value]
         # body
-        title = sub.value
+        if schema_sub.has([('describe', language),('title')]):
+            title = schema_sub['describe', language].get_value('title')
+        else:
+            title = sub.value
+        current.append(title)
+        current.append('='*len(title))
+        current.append('')
+        if schema_sub.has([('value'),('type')]):
+            type = schema_sub['value'].get_value('type')
+        else:
+            type = 'string'
+        if type!='ignore':
+            current.append("''''''")
+            current.append("Format")
+            current.append("''''''")
+            current.append('')
+            current.append(sub.value+' *'+type+'*')
+            current.append('')
         if schema_sub.has(('describe', language)):
             d = schema_sub['describe', language]
-            if d.has('title'):
-                title = d.get_value('title')
-            current.append(title)
-            current.append('====')
-            current.append('')
             if d.has('abstract'):
-                current.append("''''")
+                current.append("''''''''")
                 current.append("Abstract")
-                current.append("''''")
+                current.append("''''''''")
                 current.append('')
                 current.append(d.get_value('abstract'))
                 current.append('')
@@ -44,22 +64,35 @@ def generate_rst_files(schema_rolne, breakdown_rolne, dest_dir, language="en"):
                 current.append('')
                 current.append(d.get_value('body'))
                 current.append('')
-        else:
-            current.append(title)
-            current.append('====')
-            current.append('')
         # items list
-        for item in schema_sub.only('name'):
-            label = str(item.value)
-            if label[0:2]!="__":
-                current.append(label)
-    # generate everything
-    for key in docs:
-        fh = open(dest_dir+"/"+key+".rst", 'w')
-        for line in docs[key]:
-            fh.write(line)
-            fh.write('\n')
-        fh.close()
+        if len(schema_sub.only('name')):
+            current.append('.. list-table:: Attributes')
+            current.append('   :widths: 10 10 20 60')
+            current.append('   :header-rows: 1')
+            current.append('')
+            current.append('   * - Format')
+            current.append('     - Title')
+            current.append('     - Abstract')
+            current.append('     - Details')
+            for item in schema_sub.only('name'):
+                if str(item.value)[0:2]!="__":
+                    if item.has([('value'),('type')]):
+                        type = item['value'].get_value('type')
+                    else:
+                        type = 'string'
+                    current.append('   * - '+str(item.value)+' *'+type+'*')
+                    if item.has(('describe', language)):
+                        d = item['describe', language]
+                        if d.has('title'):
+                            current.append('     - '+d.get_value('title'))
+                        if d.has('abstract'):
+                            current.append('     - '+d.get_value('abstract'))
+                        if d.has('body'):
+                            current.append('     - '+d.get_value('body'))
+        if len(schema_sub.only('sub')):
+            for subsub in schema_sub.only('sub'):
+                parse_rst(subsub, schema_sub, docs, language)
     return
+
     
 # eof: MARDS\doc.py
