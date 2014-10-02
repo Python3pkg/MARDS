@@ -530,6 +530,20 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
                 schema.seq_delete(es)
         schema_list = schema.grep("recurse")
         safety_ctr += 1
+    #################################
+    #
+    # LOCATE Missing VALUE and TYPE
+    #
+    #################################
+    for (en, ev, ei, es) in schema.grep("name"):
+        item = schema.at_seq(es)
+        if item.has("value"):
+            if not item["value"].has("type"):
+                item["value"].append("type", "string", seq=es+".auto_type")
+        else:
+            item.append("value", None, seq=es+".auto_val")
+            item["value", None].append("type", "string", seq=es+".auto_val.auto_type")
+    
     ########################
     #   DONE
     ########################
