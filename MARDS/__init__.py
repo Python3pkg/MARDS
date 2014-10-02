@@ -11,6 +11,7 @@ import os
 
 import standard_types as st
 import mards_library as ml
+import doc
 
 def string_to_rolne(string, schema=None, schema_file=None):
     global MARDS_VER_CURRENT
