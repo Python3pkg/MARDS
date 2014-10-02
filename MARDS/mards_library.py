@@ -239,6 +239,7 @@ def value_output(value, quote_method='all', none_handle='strict'):
 
     
 def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
+    # print "a"
     if prefix is None:
         prefix = ""
     ################################
@@ -292,6 +293,7 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
             t = ("[error]", "schema", es, "'{}' not a recognized schema element name".format(en))
             error_list.append(t)
             schema.seq_delete(es)
+    # print "b"
     ##################################
     #
     # IMPLEMENT Header and imports
@@ -342,6 +344,7 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
                     error_list.extend(e)
             else:
                 error_list.append( ("[error]", "schema", ies, "unable to locate import method for '{}'".format(iev)) )
+    # print "c"
     #################################
     #
     # MAKE A COPY AND BUILD INDEX
@@ -369,6 +372,7 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
                 name_seq[subimport][ev]=False
             else:
                 name_seq[subimport][ev]=es
+    # print "d"
     #################################
     # IMPLEMENT 'template'
     #
@@ -530,6 +534,7 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
                 schema.seq_delete(es)
         schema_list = schema.grep("recurse")
         safety_ctr += 1
+    # print "e"
     #################################
     #
     # LOCATE Missing VALUE and TYPE
@@ -544,9 +549,25 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
             item.append("value", None, seq=es+".auto_val")
             item["value", None].append("type", "string", seq=es+".auto_val.auto_type")
     
+    #################################
+    #
+    # REMOVE ALL BUT TOP #!MARDS_schema_en_1.0
+    #
+    #################################
+    head_list = schema.list_seq("#!MARDS_schema_en_1.0")
+    if head_list:
+        # keep the first one, but remove any 'import' references
+        import_list = schema["#!MARDS_schema_en_1.0"].list_seq("import")
+        for seq in import_list:
+            schema.seq_delete(seq)
+        # delete the rest
+        del head_list[0]
+        for seq in head_list:
+            schema.seq_delete(seq)
     ########################
     #   DONE
     ########################
+    # print "f"
     return schema, error_list
     
 def schema_rolne_check(doc, schema):
