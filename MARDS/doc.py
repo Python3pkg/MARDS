@@ -14,6 +14,15 @@ def generate_rst_files(schema_rolne, breakdown_rolne, dest_dir, language="en"):
     # initialize with root doc
     root = breakdown_rolne["root"]
     docs[root.value] = []
+    title = root.value
+    if root.has("title"):
+        title = str(root.get_value("title"))
+    docs[root.value].append("="*len(title))
+    docs[root.value].append(title)
+    docs[root.value].append("="*len(title))
+    docs[root.value].append('')
+    for sub in root.only('sub'):
+        docs[root.value].append('* :doc:`'+sub.value+'`')
     # make subs
     parse_rst(root, schema_rolne, docs, language)
     # generate everything
@@ -79,7 +88,7 @@ def parse_rst(breakdown, schema_rolne, docs, language):
             current.append("Attributes")
             current.append("''''''''''")
             current.append('')
-            current.extend(rst_list_attributes_recursive(schema_sub, language))
+            current.extend(rst_list_attributes_recursive(schema_sub, language, sub.value))
         if len(schema_sub.only('search')):
             current.append("''''''''''")
             current.append("Variations")
@@ -90,15 +99,15 @@ def parse_rst(breakdown, schema_rolne, docs, language):
                 current.append('There additional attributes based on **'+v.value+'** :')
                 current.append('')
                 for m in v.only('match'):
-                    head = sub.value.split(".")[0]
-                    doc_name = head+"."+v.value+'.'+m.value
+                    # head = sub.value.split(".")[0]
+                    doc_name = sub.value+"."+v.value+'.'+m.value
                     current.append('  * :doc:`'+doc_name+'`')
                     sub.append("sub", doc_name)
                     sub["sub", doc_name].append("new_doc", "true")
                 parse_rst(sub, v, docs, language)
     return
 
-def rst_list_attributes_recursive(schema, language):
+def rst_list_attributes_recursive(schema, language, head):
     result = []
     for item in schema.only('name'):
         if str(item.value)[0:2]!="__":
@@ -121,17 +130,17 @@ def rst_list_attributes_recursive(schema, language):
                 result.append('    ')
                 for choice in item['value']['type'].only("choice"):
                     if choice.value in match_list:
-                        result.append('      * :doc:`'+item.value+'.'+choice.value+'`')
+                        result.append('      * :doc:`'+head+"."+item.value+'.'+choice.value+'`')
                     else:
                         result.append('      * '+choice.value)
                     if choice.has('name'):
-                        temp_list = rst_list_attributes_recursive(choice, language)
+                        temp_list = rst_list_attributes_recursive(choice, language, head)
                         result.append('        The following are part of this choice:')
                         result.append('        ')
                         for line in temp_list:
                             result.append('        '+line)
                         result.append('        ')
-                    result.append('    ')
+                result.append('    ')
             if item.has(('describe', language)):
                 d = item['describe', language]
                 if d.has('title'):
@@ -144,11 +153,11 @@ def rst_list_attributes_recursive(schema, language):
                     result.append('    body: '+d.get_value('body'))
                     result.append('    ')
             if item.has('name'):
-                temp_list = rst_list_attributes_recursive(item.only('name'), language)
+                temp_list = rst_list_attributes_recursive(item.only('name'), language, head)
                 result.append('    The following items can be below this attribute:')
                 result.append('    ')
                 for line in temp_list:
-                    result.append('    '+line)
+                    result.append('        '+line)
                 result.append('    ')
             result.append('    ')
     return result
