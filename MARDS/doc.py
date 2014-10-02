@@ -25,11 +25,19 @@ def generate_rst_files(schema_rolne, breakdown_rolne, dest_dir, language="en"):
         fh.close()
     return
 
+
 def parse_rst(breakdown, schema_rolne, docs, language):
     for sub in breakdown.only('sub'):
+        if schema_rolne.has(('name', sub.value)):
+            schema_sub = schema_rolne['name', sub.value]
+        else:
+            match = sub.value.split(".")[-1]
+            if schema_rolne.has(('match', match)):
+                schema_sub = schema_rolne['match', match]
+            else:
+                continue
         docs[sub.value] = []
         current = docs[sub.value]
-        schema_sub = schema_rolne['name', sub.value]
         # body
         if schema_sub.has([('describe', language),('title')]):
             title = schema_sub['describe', language].get_value('title')
@@ -71,25 +79,59 @@ def parse_rst(breakdown, schema_rolne, docs, language):
             current.append("Attributes")
             current.append("''''''''''")
             current.append('')
-            current.extend(rst_list_attributes_recursive(schema_sub.only('name'), language))
-        #if len(schema_sub.only('sub')):
-        #    for subsub in schema_sub.only('sub'):
-        #        parse_rst(subsub, schema_sub, docs, language)
+            current.extend(rst_list_attributes_recursive(schema_sub, language))
+        if len(schema_sub.only('search')):
+            current.append("''''''''''")
+            current.append("Variations")
+            current.append("''''''''''")
+            current.append('')
+            for v in schema_sub.only('search'):
+                current.append('')
+                current.append('There additional attributes based on **'+v.value+'** :')
+                current.append('')
+                for m in v.only('match'):
+                    head = sub.value.split(".")[0]
+                    doc_name = head+"."+v.value+'.'+m.value
+                    current.append('  * :doc:`'+doc_name+'`')
+                    sub.append("sub", doc_name)
+                    sub["sub", doc_name].append("new_doc", "true")
+                parse_rst(sub, v, docs, language)
     return
 
 def rst_list_attributes_recursive(schema, language):
     result = []
-    for item in schema:
+    for item in schema.only('name'):
         if str(item.value)[0:2]!="__":
-            if item.has([('value'),('type')]):
-                type = item['value'].get_value('type')
+            val_type = item['value'].get_value('type')
+            if val_type=='ignore':
+                result.append(str(item.value))
             else:
-                type = 'string'
-            result.append(str(item.value)+' : '+type)
-            if item.has('value'):
-                temp_list = st.rst(item['value'])
-                for line in temp_list:
-                    result.append('    '+line)
+                result.append(str(item.value)+' *'+val_type+'*')
+                if val_type!='radio_select':
+                    temp_list = st.rst(item['value'])
+                    for line in temp_list:
+                        result.append('    '+line)
+            if item['value']['type'].has('choice'):
+                match_list = []
+                if schema.has(('search', item.value)):
+                    match_list = schema['search', item.value].list_values('match')
+                    result.append('    The choice selected adds additional attributes. Click below to see them.')
+                result.append('    ')
+                result.append('    choices:')
+                result.append('    ')
+                for choice in item['value']['type'].only("choice"):
+                    if choice.value in match_list:
+                        result.append('      * :doc:`'+item.value+'.'+choice.value+'`')
+                    else:
+                        result.append('      * '+choice.value)
+                    if choice.has('name'):
+                        temp_list = rst_list_attributes_recursive(choice, language)
+                        result.append('        The following are part of this choice:')
+                        result.append('        ')
+                        for line in temp_list:
+                            result.append('        '+line)
+                        result.append('        ')
+                    result.append('    ')
             if item.has(('describe', language)):
                 d = item['describe', language]
                 if d.has('title'):
