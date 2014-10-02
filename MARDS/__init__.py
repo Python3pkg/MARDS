@@ -2,7 +2,7 @@
 #
 # MARDS data serialization library
 #
-# Version 0.1.9
+# Version 0.1.10
 
 MARDS_VER_CURRENT = "1.0"
 
@@ -11,6 +11,7 @@ import os
 
 import standard_types as st
 import mards_library as ml
+import doc
 
 def string_to_rolne(string, schema=None, schema_file=None):
     global MARDS_VER_CURRENT
@@ -54,7 +55,7 @@ def rolne_to_string(r, tab_size=4, quote_all=True):
     result = ""
     #print r.data
     if r:
-        for (rn, rv, rl) in r.data:
+        for (rn, rv, rl, rs) in r.data:
             result += rn
             if rv is not None:
                 printable = str(rv)
