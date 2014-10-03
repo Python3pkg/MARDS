@@ -15,7 +15,7 @@ doc = '''
 blink "zippy_b.oing"
     rate 23
     abc beep beep 
-        joex 44ft
+        joex 44 labs
         joey zark
         joeBxx 5 inches
         joex_baloo 9
@@ -31,15 +31,15 @@ zed 1.234e+2
     bob 55
 '''
 
-schema_file = "temp/simple.MARDS-schema"
-with open(schema_file, "r") as fh:
-    schema = fh.read()
-    schema_dir = os.path.dirname(os.path.realpath(schema_file))
-x,e = MARDS.ml.SCHEMA_to_rolne(doc=schema, schema_dir=schema_dir)
+#schema_file = "temp/simple.MARDS-schema"
+#with open(schema_file, "r") as fh:
+#    schema = fh.read()
+#    schema_dir = os.path.dirname(os.path.realpath(schema_file))
+#x,e = MARDS.ml.SCHEMA_to_rolne(doc=schema, schema_dir=schema_dir)
 
 #x,e = MARDS.string_to_rolne(doc, schema_file="temp/simple.MARDS-schema")
-#x,e = MARDS.string_to_rolne(doc)
-#x,e = MARDS.compile(x, schema_file="temp/simple.MARDS-schema", renumber=True)
+x,e = MARDS.string_to_rolne(doc)
+x,e = MARDS.compile(x, schema_file="temp/simple.MARDS-schema", renumber=True)
 
 print "FINAL:\n"
 print x._explicit()
