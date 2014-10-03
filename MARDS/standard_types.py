@@ -25,32 +25,25 @@ def apply_schema_types(doc, schema):
 def _apply_schema_types(doc, orig_schema, extended):
     schema = schema_match_up(doc, orig_schema)
     error_list = []
+    to_delete = []
     for item in doc:
         rule = get_item_rule(item, schema)
         if rule:
             if rule.find("value"):
                 if rule.find("value").list_names("type"):
                     e = do_normalization(item, rule["value"]["type"], extended)
-                    error_list.extend(e)
+                    if e:
+                        error_list.extend(e)
+                        for err in e:
+                            if err[0]=="[error]":
+                                to_delete.append(item.seq)
+                                break
             if len(item):
                 el = _apply_schema_types(item, rule, extended)
                 error_list += el
+    for seq in to_delete:
+        doc.seq_delete(seq)
     return error_list
-    
-    
-    
-# TODO : add to rolne support for .exist(name ...)
-#    the problem with .find(name ...) is if the subtending rolne is empty, it
-#    resolves as False. (In python, both None and <empty_rolne> are False.)
-# above, I use 'rule.find("value").list_names("type")' as a work-around.
-#
-# ooo ... even better, support a listy version: .names_exist([name, name, name])
-#   that way, I can do 'if rule.names_exist(["value", "type]):'
-#
-# ...... and of course, .keys_exist, .values_exist, .seq_exist
-#
-# PLUS later: .parent_name(), .parent_value(), parent_index(), .parent_seq()
-#              and .parent_key()
     
 def get_item_rule(item, schema):
     if item.name in schema.list_values("name"):

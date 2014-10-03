@@ -574,7 +574,7 @@ def schema_rolne_check(doc, schema):
     '''
     CHECK THE DOCUMENT AGAINST IT'S SCHEMA
     
-    returns: clean-up-document, error_list
+    returns: cleaned-up-document, error_list
     '''
     import standard_types as st
     error_list = []
@@ -627,15 +627,19 @@ def check_schema_coverage(doc, schema):
     is a matching 'name' in the schema at that level.
     '''
     error_list = []
+    to_delete = []
     for entry in doc.list_tuples():
         (name, value, index, seq) = entry
         temp_schema = schema_match_up(doc, schema)
         if not name in temp_schema.list_values("name"):
             error_list.append( ("[error]", "doc", seq, "a name of '{}' not found in schema".format(name)) )
+            to_delete.append(seq)
         else:
             # check subs
             el = check_schema_coverage(doc[name, value, index], temp_schema["name", name])
             error_list.extend(el)
+    for seq in to_delete:
+        doc.seq_delete(seq)
     return error_list
 
 def schema_match_up(doc, schema):
@@ -690,6 +694,7 @@ def _schema_match_up_type_choice(doc, copy):
 def sub_schema_treatments(doc, orig_schema):
     schema = schema_match_up(doc, orig_schema)
     error_list = []
+    to_delete = []
     for target in schema.list_values("name"):
         pointer = schema["name", target]
         treatment = pointer.get_value("treatment")
@@ -707,6 +712,7 @@ def sub_schema_treatments(doc, orig_schema):
                 else:
                     delete_list.append((en, ev, ei))
                     error_list.append( ("[error]", "doc", es, "'{}' entries should be unique, but this line is a duplicate of line {}.".format(target, first_line[ev])) )
+                    to_delete.append(es)
             for tup in reversed(delete_list):  # the items must be deleted in reverse to avoid index numbering problems
                 del doc[tup]
         elif treatment=="sum":
@@ -722,6 +728,7 @@ def sub_schema_treatments(doc, orig_schema):
                     #print doc
                     #exit()
                     error_list.append( ("[error]", "doc", es, "only one '{}' entry should exist, but this line is in addition to line {}.".format(target, first_line)) )
+                    to_delete.append(es)
                 for (en, ev, ei, es) in reversed(entry_list):
                     del doc[en, ev, ei]
         else:
@@ -730,6 +737,8 @@ def sub_schema_treatments(doc, orig_schema):
         for key in doc.list_keys(target):
             el = sub_schema_treatments(doc[key],schema["name", target])
             error_list.extend(el)
+    for seq in to_delete:
+        doc.seq_delete(seq)
     return error_list
 
 req_ctr = 0
