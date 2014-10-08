@@ -2,9 +2,10 @@
 #
 # MARDS data serialization library
 #
-# Version 0.1.11
+__version__ = '0.1.12'
+__version_info__ = tuple([ int(num) for num in __version__.split('.')])
 
-MARDS_VER_CURRENT = "1.0"
+MARDS_VER_CURRENT = "1.0" # this is the SPEC version, NOT the library version
 
 from rolne import rolne
 import os
