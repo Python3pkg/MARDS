@@ -2,7 +2,7 @@
 #
 # MARDS data serialization library
 #
-__version__ = '0.1.12'
+__version__ = '0.1.13'
 __version_info__ = tuple([ int(num) for num in __version__.split('.')])
 
 MARDS_VER_CURRENT = "1.0" # this is the SPEC version, NOT the library version
@@ -35,18 +35,20 @@ def string_to_python(doc=None, schema=None, context="doc", tab_strict=False):
         result = r.dump()
     return result, error_list
 
-def compile(doc_rolne, schema=None, schema_file=None, renumber=False):
+def compile(doc_rolne, schema=None, schema_file=None, schema_rolne=None, renumber=False):
     global MARDS_VER_CURRENT
+    schema_errors = []
     if type(doc_rolne) is not rolne:
         raise TypeError, "first parameter must be a rolne"
-    schema_dir = os.getcwd()
-    if schema_file:
-        with open(schema_file, "r") as fh:
-            schema = fh.read()
-            schema_dir = os.path.dirname(os.path.realpath(schema_file))
-    if not schema:
-        schema = "#!MARDS_schema_en_"+MARDS_VER_CURRENT+"\n    exclusive false\n"
-    schema_rolne, schema_errors = ml.SCHEMA_to_rolne(schema, prefix="", schema_dir=schema_dir)
+    if not schema_rolne:
+        schema_dir = os.getcwd()
+        if schema_file:
+            with open(schema_file, "r") as fh:
+                schema = fh.read()
+                schema_dir = os.path.dirname(os.path.realpath(schema_file))
+        if not schema:
+            schema = "#!MARDS_schema_en_"+MARDS_VER_CURRENT+"\n    exclusive false\n"
+        schema_rolne, schema_errors = ml.SCHEMA_to_rolne(schema, prefix="", schema_dir=schema_dir)
     copy = doc_rolne.copy(seq_prefix="", renumber=renumber)
     new_rolne, doc_errors = ml.schema_rolne_check(copy, schema_rolne)
     all_errors = schema_errors + doc_errors
