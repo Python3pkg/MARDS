@@ -1,10 +1,8 @@
 from distutils.core import setup
 
-import MARDS
-
 setup(
     name='MARDS',
-    version=MARDS.__version__,
+    version='0.1.14',
     author='Maker Redux Corporation',
     author_email='johnd@makerredux.com',
     packages=['MARDS'],
