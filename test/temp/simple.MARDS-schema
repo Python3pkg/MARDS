@@ -39,11 +39,27 @@ name zed
             extend rabbit
                 from sub/subsub
 name item
+    describe en
+        title "The listage of Items"
+        abstract "A very colorful item list."
+        body "Da body"
+        body "Da body2"
+        body "Some text ::"
+        body "   bling"
+        body "   a ling"
+        body "Da body3"
     treatment unique
     value
         type label
         required
     name size
+        describe en
+            title "The heaviness"
+            abstract "The absolute weight of the item."
+            body "Da body"
+            body "Some MORE text ::"
+            body "   bling"
+            body "   a ling"
         treatment one
         value
             type mass

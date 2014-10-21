@@ -31,15 +31,29 @@ zed 1.234e+2
     bob 55
 '''
 
+breakdown_text = '''
+root index
+    title "blah blah"
+    add_body_file intro.txt
+
+    sub item
+        new_doc true
+    sub abc
+        new_doc true
+'''
+
 schema_file = "temp/simple.MARDS-schema"
 with open(schema_file, "r") as fh:
     schema = fh.read()
     schema_dir = os.path.dirname(os.path.realpath(schema_file))
-r,e = MARDS.ml.SCHEMA_to_rolne(doc=schema, schema_dir=schema_dir)
+x,e = MARDS.ml.SCHEMA_to_rolne(doc=schema, schema_dir=schema_dir)
+
+breakdown, e = MARDS.string_to_rolne(breakdown_text)
+MARDS.doc.generate_rst_files(x, breakdown, "tempdoc")
 
 #x,e = MARDS.string_to_rolne(doc, schema_file="temp/simple.MARDS-schema")
-x,e = MARDS.string_to_rolne(doc)
-x,e = MARDS.compile(x, schema_rolne=r, renumber=True)
+#x,e = MARDS.string_to_rolne(doc)
+#x,e = MARDS.compile(x, schema_rolne=r, renumber=True)
 
 print "FINAL:\n"
 print x._explicit()

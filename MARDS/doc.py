@@ -60,43 +60,28 @@ def parse_rst(breakdown, schema_rolne, docs, language):
         else:
             type = 'string'
         if type!='ignore':
-            current.append("''''''")
-            current.append("Format")
-            current.append("''''''")
-            current.append('')
-            current.append(sub.value+' *'+type+'*')
+            current.append('``'+sub.value+'`` *'+type+'*')
             current.append('')
         if schema_sub.has(('describe', language)):
             d = schema_sub['describe', language]
             if d.has('abstract'):
-                current.append("''''''''")
-                current.append("Abstract")
-                current.append("''''''''")
-                current.append('')
-                current.append(d.get_value('abstract'))
+                temp = ""
+                for paragraph in d.list_values('abstract'):
+                    temp += paragraph + " "
+                current.append('*'+temp.strip()+'*')
                 current.append('')
             if d.has('body'):
-                current.append("''''")
-                current.append("Body")
-                current.append("''''")
-                current.append('')
-                current.append(d.get_value('body'))
-                current.append('')
+                for paragraph in d.list_values('body'):
+                    current.append(paragraph)
+                    current.append('')
         # items list
-        if len(schema_sub.only('name')):
-            current.append("''''''''''")
-            current.append("Attributes")
-            current.append("''''''''''")
-            current.append('')
-            current.extend(rst_list_attributes_recursive(schema_sub, language, sub.value))
         if len(schema_sub.only('search')):
             current.append("''''''''''")
             current.append("Variations")
             current.append("''''''''''")
             current.append('')
             for v in schema_sub.only('search'):
-                current.append('')
-                current.append('There additional attributes based on **'+v.value+'** :')
+                current.append('There are additional attributes based on **'+v.value+'** :')
                 current.append('')
                 for m in v.only('match'):
                     # head = sub.value.split(".")[0]
@@ -105,6 +90,12 @@ def parse_rst(breakdown, schema_rolne, docs, language):
                     sub.append("sub", doc_name)
                     sub["sub", doc_name].append("new_doc", "true")
                 parse_rst(sub, v, docs, language)
+        if len(schema_sub.only('name')):
+            current.append("''''''''''")
+            current.append("Attributes")
+            current.append("''''''''''")
+            current.append('')
+            current.extend(rst_list_attributes_recursive(schema_sub, language, sub.value))
     return
 
 def rst_list_attributes_recursive(schema, language, head):
@@ -115,27 +106,29 @@ def rst_list_attributes_recursive(schema, language, head):
             if val_type=='ignore':
                 result.append(str(item.value))
             else:
-                result.append(str(item.value)+' *'+val_type+'*')
-                if val_type!='radio_select':
-                    temp_list = st.rst(item['value'])
-                    for line in temp_list:
-                        result.append('    '+line)
+                # TODO: add a hyperlink for val_type as gen'd by from st module
+                result.append('``'+str(item.value)+'`` *'+val_type+'*')
+                result.append('')
+                # if val_type!='radio_select':
+                #    temp_list = st.rst(item['value'])
+                #    for line in temp_list:
+                #        result.append('    '+line)
             if item['value']['type'].has('choice'):
                 match_list = []
                 if schema.has(('search', item.value)):
                     match_list = schema['search', item.value].list_values('match')
-                    result.append('    The choice selected adds additional attributes. Click below to see them.')
-                result.append('    ')
+                    result.append('    The choice selected adds additional attributes. Click above to see them.')
                 result.append('    choices:')
                 result.append('    ')
                 for choice in item['value']['type'].only("choice"):
                     if choice.value in match_list:
-                        result.append('      * :doc:`'+head+"."+item.value+'.'+choice.value+'`')
+                        result.append('      * ``'+choice.value.strip()+'`` - :doc:`'+head+"."+item.value+'.'+choice.value+'`')
                     else:
-                        result.append('      * '+choice.value)
+                        result.append('      * ``'+choice.value.strip()+'``')
+                    result.append('    ')
                     if choice.has('name'):
                         temp_list = rst_list_attributes_recursive(choice, language, head)
-                        result.append('        The following are part of this choice:')
+                        result.append('        The following can further define this choice:')
                         result.append('        ')
                         for line in temp_list:
                             result.append('        '+line)
@@ -143,18 +136,19 @@ def rst_list_attributes_recursive(schema, language, head):
                 result.append('    ')
             if item.has(('describe', language)):
                 d = item['describe', language]
-                if d.has('title'):
-                    result.append('    title: '+d.get_value('title'))
-                    result.append('    ')
                 if d.has('abstract'):
-                    result.append('    abstract: '+d.get_value('abstract'))
+                    temp = ""
+                    for paragraph in d.list_values('abstract'):
+                        temp += paragraph + " "
+                    result.append('    *'+temp.strip()+'*')
                     result.append('    ')
                 if d.has('body'):
-                    result.append('    body: '+d.get_value('body'))
-                    result.append('    ')
+                    for paragraph in d.list_values('body'):
+                        result.append('    '+paragraph)
+                        result.append('    ')
             if item.has('name'):
                 temp_list = rst_list_attributes_recursive(item.only('name'), language, head)
-                result.append('    The following items can be below this attribute:')
+                result.append('    The following can further define this attribute:')
                 result.append('    ')
                 for line in temp_list:
                     result.append('        '+line)
