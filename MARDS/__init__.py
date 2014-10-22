@@ -2,7 +2,7 @@
 #
 # MARDS data serialization library
 #
-__version__ = '0.1.14'
+__version__ = '0.1.15'
 __version_info__ = tuple([ int(num) for num in __version__.split('.')])
 
 MARDS_VER_CURRENT = "1.0" # this is the SPEC version, NOT the library version
