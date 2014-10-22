@@ -83,3 +83,26 @@ name item
         treatment concat
         value
             default "unknown"
+            
+            
+name blinkb
+    value
+        type label
+        required
+    name rate
+    name joex
+        required
+        value
+            type length
+    name joey
+    search joey
+        match "zark"
+            search joex
+                match 44ft
+                    extend xx
+                        from sub
+        match_else
+            raise_error "We don't rightly support non-'joey zark' types around here"
+    search joex
+        match "44ft"
+            name joex_baloo

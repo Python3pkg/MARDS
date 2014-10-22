@@ -1,29 +1,24 @@
 blink
 =====
 
-
 ``blink`` *label*
 
 ''''''''''
 Attributes
 ''''''''''
 
-rate *string*
-    A *string* value is expected.
+``rate`` *string*
+
     
+``abc`` *jed*
+
+    The following can further define this attribute:
     
-abc *jed*
-    A *jed* value is expected.
-    
-    The following items can be below this attribute:
-    
-        joex *length*
-            A *length* value is expected.
+        ``joex`` *length*
+        
             
-            
-        joey *string*
-            A *string* value is expected.
-            
+        ``joey`` *string*
+        
             
     
     

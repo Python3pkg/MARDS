@@ -56,7 +56,7 @@ Attributes
     
       * ``blue``
     
-        The following are part of this choice:
+        The following can further define this choice:
         
         ``blue_cave`` *string*
         
@@ -64,7 +64,7 @@ Attributes
         
       * ``red``
     
-        The following are part of this choice:
+        The following can further define this choice:
         
         ``red_cave`` *string*
         
@@ -72,7 +72,7 @@ Attributes
         
       * ``yellow``
     
-        The following are part of this choice:
+        The following can further define this choice:
         
         ``yellow_cave`` *string*
         

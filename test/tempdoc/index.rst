@@ -2,5 +2,6 @@
 blah blah
 =========
 
-* :doc:`item`
-* :doc:`abc`
+.. include:: intro.rst
+
+* :doc:`blinkb`
