@@ -8,13 +8,13 @@ from rolne import rolne
 import regex
 import decimal
 import math
-from mards_library import SCHEMA_to_rolne, schema_match_up
-from standard_types_schema import standard_types_text
+from .mards_library import SCHEMA_to_rolne, schema_match_up
+from .standard_types_schema import standard_types_text
 
 
 standard_type_rolne, e = SCHEMA_to_rolne(standard_types_text)
 if e:
-    print "standard_library errors: "+repr(e)
+    print("standard_library errors: "+repr(e))
     
 def apply_schema_types(doc, schema):
     global standard_type_rolne
@@ -175,12 +175,12 @@ def rst(value_rule):
         pass
     return lines
     
-label_search = regex.compile(ur"[\p{Z}\p{P}^](?<!_)(?<!\.)(?<!\*)", regex.UNICODE)
+label_search = regex.compile(r"[\p{Z}\p{P}^](?<!_)(?<!\.)(?<!\*)", regex.UNICODE)
 
 def do_norm_label(item, rule, type_rule):
     global label_search
     error_list = []
-    value = unicode(item.value)
+    value = str(item.value)
     #TODO check for required?
     if value is not None:
         r = label_search.search(value)
@@ -285,7 +285,7 @@ def do_norm_radio_select(item, rule, type_rule):
     global label_search
     error_list = []
     if item.value is not None:
-        value = unicode(item.value)
+        value = str(item.value)
         proper_labels = rule.list_values("choice")
         if value not in proper_labels:
             error_list.append( ("[error]", "doc", item.seq, "selection '{}' not found in allowed choices: {}.".format(value, repr(proper_labels))) )
@@ -621,7 +621,7 @@ def do_norm_boolean(item, rule, type_rule):
     error_list = []
     result = None
     if item.value is not None:
-        value = unicode(item.value.lower())
+        value = str(item.value.lower())
         true_words = type_rule["unit", "true"].list_values("*")
         false_words = type_rule["unit", "false"].list_values("*")
         if value in true_words:
@@ -645,7 +645,7 @@ def do_norm_integer(item, rule, type_rule):
                 number = number.quantize(decimal.Decimal('1'))
                 error_list.append( ("[warning]", "doc", item.seq, "trimming off fractional part of number.".format(item.value)) )
             item.value = str(number)
-        except Exception, e:
+        except Exception as e:
             error_list.append( ("[error]", "doc", item.seq, "unable to convert '{}' into an integer. msg: {}".format(item.value, str(e))) )
     return error_list
 
@@ -658,7 +658,7 @@ def do_norm_float(item, rule, type_rule):
             number = decimal.Decimal(value)
             string = sci_str(number)
             item.value = string
-        except Exception, e:
+        except Exception as e:
             error_list.append( ("[error]", "doc", item.seq, "unable to convert '{}' into a floating point number. msg: {}".format(item.value, str(e))) )
     return error_list
 

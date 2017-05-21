@@ -22,10 +22,10 @@ def MARDS_to_rolne(doc=None, schema=None, context="doc", strict=False, key_open=
         error_list.extend(schema_errors)
     current = 0
     tab_list = [0]
-    pointer_list = range(50)
+    pointer_list = list(range(50))
     pointer_list[0]=result
     last_spot = pointer_list[0]
-    last_nvi = range(50)
+    last_nvi = list(range(50))
     for ctr, line in enumerate(doc.split("\n")):
         (indent, key, value, error) = parse_line(line, tab_list, strict=strict, key_open=key_open)
         if error:
@@ -321,19 +321,19 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
                         try:
                             with open(file_loc, 'r') as file:
                                 subdata = file.read()
-                        except IOError, e: 
+                        except IOError as e: 
                             error_list.append ( ("[error]", "schema", ies, str(e)) )
                             subdata = None
                 else:
                     try:
                         with open(file_loc, 'r') as file:
                             subdata = file.read()
-                    except IOError, e: 
+                    except IOError as e: 
                         file_loc = schema_dir+"/"+file_loc
                         try:
                             with open(file_loc, 'r') as file:
                                 subdata = file.read()
-                        except IOError, e: 
+                        except IOError as e: 
                             error_list.append ( ("[error]", "schema", ies, str(e)) )
                             subdata = None
                 if subdata:
@@ -474,9 +474,9 @@ def SCHEMA_to_rolne(doc=None, prefix=None, schema_dir=None):
                     error_list.append(t)
                     schema.seq_delete(es)
             else:
-                print prefix
+                print(prefix)
                 for s in name_seq:
-                    print "   ",s
+                    print("   ",s)
                 t = ("[error]", "schema", es, "an import for '{}' not found in schema".format(sub_doc))
                 error_list.append(t)
                 schema.seq_delete(es)
@@ -576,7 +576,7 @@ def schema_rolne_check(doc, schema):
     
     returns: cleaned-up-document, error_list
     '''
-    import standard_types as st
+    from . import standard_types as st
     error_list = []
     #
     # PASS ONE: FORWARD CHECK OF DOC
@@ -876,7 +876,7 @@ def sub_convert_python(doc, schema):
                 result[en].append(item)
         # cleanup of deleted keys from sub operation
         for name in delete_list:
-            print "del", name, delete_list[name]
+            print("del", name, delete_list[name])
             # TODO: leave this in here or handle summing in rolne?
     return result
 

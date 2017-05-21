@@ -56,7 +56,7 @@ name item
 
 # x,e = MARDS._SCHEMA_to_rolne(schema)
 x,e = MARDS.string_to_rolne(doc, schema)
-print "FINAL:\n"
-print x._explicit()
-print "ERRORS:\n"
-print repr(e)
+print("FINAL:\n")
+print(x._explicit())
+print("ERRORS:\n")
+print(repr(e))

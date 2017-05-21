@@ -10,9 +10,9 @@ MARDS_VER_CURRENT = "1.0" # this is the SPEC version, NOT the library version
 from rolne import rolne
 import os
 
-import standard_types as st
-import mards_library as ml
-import doc
+from . import standard_types as st
+from . import mards_library as ml
+from . import doc
 
 def string_to_rolne(string, schema=None, schema_file=None):
     global MARDS_VER_CURRENT
@@ -39,7 +39,7 @@ def compile(doc_rolne, schema=None, schema_file=None, schema_rolne=None, renumbe
     global MARDS_VER_CURRENT
     schema_errors = []
     if type(doc_rolne) is not rolne:
-        raise TypeError, "first parameter must be a rolne"
+        raise TypeError("first parameter must be a rolne")
     if not schema_rolne:
         schema_dir = os.getcwd()
         if schema_file:
@@ -82,4 +82,4 @@ def rolne_to_string(r, tab_size=4, quote_all=True):
 
 if __name__ == "__main__":
 
-    print "TBD"
+    print("TBD")
